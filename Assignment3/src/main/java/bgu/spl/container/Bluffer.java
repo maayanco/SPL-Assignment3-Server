@@ -101,19 +101,27 @@ public class Bluffer implements Game{
 		}
 	}
 	
+	public void sendRoundStatusToAllPlayers(){
+		
+	}
+	
 	public void finishRound(){
 		//delete the first question, send messages to all players
 		Round currentRound = getCurrentRound();
+		
 		//Iterate over all the players, update the total score
-		String summaryString="";
+		sendMessageToAllPlayers("GAMEMSG The Correct answer is: "+currentRound.getRealAnswer());
+		
+		//String summaryString="";
 		for(Player player : playersList){
 			int currentScore = mapPlayersToScores.get(player);
 			int roundScore = currentRound.getScoreByPlayer(player);
 			mapPlayersToScores.replace(player, currentScore+roundScore);
-			summaryString=summaryString+player.getPlayerName()+" "+mapPlayersToScores.get(player)+"pts";
 		}
 		
-		sendMessageToAllPlayers("GAMEMSG Summary:"+summaryString);
+		//iterate over the mapAnswersToPlayers - 
+		
+		//sendMessageToAllPlayers("GAMEMSG Summary:"+summaryString);
 		
 		roundsList.removeFirst();
 		

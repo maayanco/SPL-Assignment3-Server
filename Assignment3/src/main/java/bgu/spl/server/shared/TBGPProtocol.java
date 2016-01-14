@@ -7,6 +7,7 @@ import java.util.Map;
 
 import bgu.spl.container.ContainerSingleton;
 import bgu.spl.container.Player;
+import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.Message;
 import bgu.spl.server.threadperclient.AsyncServerProtocol;
 import bgu.spl.server.threadperclient.ProtocolCallback;
@@ -16,8 +17,8 @@ public class TBGPProtocol implements AsyncServerProtocol<String>{
 	private static Player player;
 	private static ContainerSingleton container = ContainerSingleton.getInstance();
 	private String TERMINATION_MESSAGE = "quit"; 
-	boolean shouldClose=false;
-	
+	private boolean shouldClose=false;
+	private ClientCommand expectedCommand = ClientCommand.NICK; 
 	
 	public TBGPProtocol(Player player, ContainerSingleton container){
 		this.player=player;

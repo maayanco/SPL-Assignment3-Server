@@ -15,6 +15,7 @@ public class Round {
 	private Map<Player,String> mapPlayersToBluffedAnswers = new HashMap<Player, String>();
 	private Map<Player, String> mapPlayersToSelectedAnswers = new HashMap<Player, String>(); 
 	private Map<Player, Integer> mapPlayersToRoundScore = new HashMap<Player, Integer>();
+	//private Map<Player, RoundData> mapPlayersToRoundData = new HashMap<Player,RoundData>();
 	
 	public Round(String questionText, String realAnswer, LinkedList<Player> playersList){
 		this.questionText=questionText;
@@ -142,6 +143,9 @@ public class Round {
 		return score;
 	}
 	
+	public String getRealAnswer(){
+		return realAnswer;
+	}
 	public String getQuestion(){
 		return questionText;
 	}
