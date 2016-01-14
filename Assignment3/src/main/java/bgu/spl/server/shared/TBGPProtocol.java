@@ -14,16 +14,13 @@ import bgu.spl.server.threadperclient.ProtocolCallback;
 
 public class TBGPProtocol implements AsyncServerProtocol<String>{
 	
-	private static Player player;
+	private static Player player = new Player();
 	private static ContainerSingleton container = ContainerSingleton.getInstance();
 	private String TERMINATION_MESSAGE = "quit"; 
 	private boolean shouldClose=false;
 	private ClientCommand expectedCommand = ClientCommand.NICK; 
 	
-	public TBGPProtocol(Player player, ContainerSingleton container){
-		this.player=player;
-		this.container=container;
-	}
+	public TBGPProtocol(){}
 
 	/**
 	 * Receives a msg and determines if this message is a termination message 
@@ -36,9 +33,13 @@ public class TBGPProtocol implements AsyncServerProtocol<String>{
 	public void processMessage(String msg, ProtocolCallback<String> callback) {
 		if(!msg.getClass().equals(String.class)){ //check that message is a string..
 			///then don't do anything!! return like.. sysmessage that this is bad or something!
+			return;
 		}
 		
+		player.setCallback(callback);
+		
 		Message message = new Message(msg);
+		
 		if(!message.isValid()){
 			try {
 				callback.sendMessage("SYSMSG "+msg+" Rejected");
@@ -48,7 +49,7 @@ public class TBGPProtocol implements AsyncServerProtocol<String>{
 			}
 		}
 		else{
-			container.processMessage(message, callback, player);
+			container.processMessage(message, player);
 		}
 	}
 

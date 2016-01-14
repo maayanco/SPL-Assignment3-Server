@@ -5,28 +5,38 @@ import bgu.spl.server.threadperclient.ProtocolCallback;
 
 public class Player {
 	
-	private String playerName;
+	private String playerName="";
 	private Room currentRoom;
-	//private ProtocolCallback callback; //new
+	private ProtocolCallback callback; 
 	
-	public Player(String playerName){
-		this.playerName=playerName;
+	public Player(){
 	}
-	
-	public void setPlayerName(String name){
-		this.playerName=name;
+
+	public String getPlayerName() {
+		return playerName;
 	}
-	
-	public String getPlayerName(){
-		return this.playerName;
+
+	public void setPlayerName(String playerName) {
+		this.playerName = playerName;
 	}
-	
-	public void setRoom(Room room){
-		currentRoom=room;
-	}
-	
-	public Room getRoom(){
+
+	public Room getCurrentRoom() {
 		return currentRoom;
 	}
+
+	public void setCurrentRoom(Room currentRoom) {
+		this.currentRoom = currentRoom;
+	}
+
+	public ProtocolCallback getCallback() {
+		return callback;
+	}
+
+	public void setCallback(ProtocolCallback callback) { 
+		if(this.callback==null){
+			this.callback = callback;
+		}
+	}
+	
 	
 }

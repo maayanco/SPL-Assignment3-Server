@@ -18,7 +18,7 @@ public class Round {
 	//private Map<Player, RoundData> mapPlayersToRoundData = new HashMap<Player,RoundData>();
 	
 	
-	public boolean sendPlayersAnswerStatus(Player player){
+	public boolean isPlayerCorrect(Player player){
 		String playersAnswer = mapPlayersToSelectedAnswers.get(player);
 		return playersAnswer.equals(realAnswer);	
 	}

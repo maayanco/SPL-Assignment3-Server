@@ -25,7 +25,7 @@ public class Server {
 				System.out.println("Listening");
 				Socket socket = serverSocket.accept();
 				Tokenizer tockenizer = new MessageTokenizer(new InputStreamReader(socket.getInputStream()));
-				AsyncServerProtocol protocol = new TBGPProtocol(new Player(""), ContainerSingleton.getInstance());
+				AsyncServerProtocol protocol = new TBGPProtocol();
 				Runnable connectionHandler = new ConnectionHandler(encoder,tockenizer,protocol,socket);
 				new Thread(connectionHandler).start();
 			}

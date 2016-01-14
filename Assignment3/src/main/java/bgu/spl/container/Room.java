@@ -19,7 +19,7 @@ public class Room {
 	private Game game;
 	private LinkedList<Player> playersList = new LinkedList<Player>();
 	private LinkedList<String> supportedGames = new LinkedList<String>();
-	private Map<Player, ProtocolCallback> mapPlayerToCallback = new HashMap<Player,ProtocolCallback>();
+	//private Map<Player, ProtocolCallback> mapPlayerToCallback = new HashMap<Player,ProtocolCallback>();
 	
 	//we need to map the players to their callbacks..
 	//because when we need to send a message to all the players
@@ -28,9 +28,9 @@ public class Room {
 		this.roomName=roomName;
 	}
 	
-	public void addPlayer(Player player, ProtocolCallback callback){
+	public void addPlayer(Player player){
 		playersList.add(player);
-		mapPlayerToCallback.put(player, callback); 
+		//mapPlayerToCallback.put(player, callback); 
 	}
 	
 	public LinkedList<Player> getPlayers(){
@@ -48,23 +48,18 @@ public class Room {
 	
 	//Big problem!!! I Specificy BLUFFER HERREEE!
 	public void startNewGame(){
-		game = new Bluffer(playersList, mapPlayerToCallback);
+		game = new Bluffer(playersList);
 	}
 	
 	public void triggerAllCallbacks(String msg){
-		Iterator it = mapPlayerToCallback.entrySet().iterator();
-		while(it.hasNext()){
-			Map.Entry entry = (Map.Entry) it.next();
-			ProtocolCallback callback = (ProtocolCallback) entry.getValue();
-			
+		for(Player player : playersList){
 			try {
-				callback.sendMessage(msg);
+				player.getCallback().sendMessage(msg);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}			
+			};
 		}
-
 	}
 	
 }

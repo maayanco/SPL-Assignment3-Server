@@ -1,5 +1,5 @@
 package bgu.spl.server.passive;
 
-public enum ServerCommands {
+public enum ServerCommand {
 	ASKTXT, ASKCHOICES, SYSMSG, GAMEMSG, USRMSG;
 }
