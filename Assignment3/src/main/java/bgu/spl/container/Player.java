@@ -7,6 +7,7 @@ public class Player {
 	
 	private String playerName;
 	private Room currentRoom;
+	//private ProtocolCallback callback; //new
 	
 	public Player(String playerName){
 		this.playerName=playerName;

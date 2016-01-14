@@ -17,6 +17,12 @@ public class Round {
 	private Map<Player, Integer> mapPlayersToRoundScore = new HashMap<Player, Integer>();
 	//private Map<Player, RoundData> mapPlayersToRoundData = new HashMap<Player,RoundData>();
 	
+	
+	public boolean sendPlayersAnswerStatus(Player player){
+		String playersAnswer = mapPlayersToSelectedAnswers.get(player);
+		return playersAnswer.equals(realAnswer);	
+	}
+	
 	public Round(String questionText, String realAnswer, LinkedList<Player> playersList){
 		this.questionText=questionText;
 		this.realAnswer=realAnswer;

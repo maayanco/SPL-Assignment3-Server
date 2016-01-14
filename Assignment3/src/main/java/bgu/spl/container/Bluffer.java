@@ -117,6 +117,11 @@ public class Bluffer implements Game{
 			int currentScore = mapPlayersToScores.get(player);
 			int roundScore = currentRound.getScoreByPlayer(player);
 			mapPlayersToScores.replace(player, currentScore+roundScore);
+			
+			
+			ProtocolCallback callback = mapPlayersToCallbacks.get(player);
+			if(getCurrentRound().isPlayerCorrect(player))
+				triggerCallback(callback, ServerCommands.GAMEMSG+" correct! ");
 		}
 		
 		//iterate over the mapAnswersToPlayers - 
