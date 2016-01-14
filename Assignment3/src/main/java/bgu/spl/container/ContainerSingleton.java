@@ -11,6 +11,7 @@ import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.CommandType;
 import bgu.spl.server.passive.Message;
 import bgu.spl.server.passive.Result;
+import bgu.spl.server.passive.ServerCommand;
 import bgu.spl.server.threadperclient.ProtocolCallback;
 
 public class ContainerSingleton {
@@ -50,17 +51,38 @@ public class ContainerSingleton {
 			}
 		}
 		
-		if(foundNick==false){ //if the nick is 'free'
+		if(foundNick==false){ 
+			//if the nick is 'free'
 			currentPlayer.setPlayerName(message.getParameter(0));
 			playersNames.add(requestedNick);
-			triggerCallback(currentPlayer,"SYSMSG NICK"+Result.ACCEPTED);
+			
+			ClientCommand[] newAcceptableCommands = {ClientCommand.JOIN, ClientCommand.LISTGAMES, ClientCommand.QUIT};
+			sendSYSMSG(currentPlayer, Result.ACCEPTED, message ,newAcceptableCommands, null);
 		}
 		else{
-			triggerCallback(currentPlayer,"SYSMSG NICK"+Result.REJECTED);
+			ClientCommand[] newAcceptableCommands = {ClientCommand.NICK, ClientCommand.QUIT};
+			sendSYSMSG(currentPlayer, Result.REJECTED, message ,newAcceptableCommands, null);
+		}
+	}
+	
+	
+	private void sendSYSMSG(Player currentPlayer, Result result, Message originalMsg, ClientCommand[] arr, String additionalParameters){
+		//Change Acceptable Commands
+		if(arr!=null){
+			LinkedList<ClientCommand> newAcceptableCommands = new LinkedList<ClientCommand>();
+			for(ClientCommand command : arr){
+				newAcceptableCommands.add(command);
+			}
+			currentPlayer.setAcceptedCommands(newAcceptableCommands);
 		}
 		
+		String parameters="";
+		if(additionalParameters!=null && additionalParameters!=""){
+			parameters+=" "+additionalParameters;
+		}
+		triggerCallback(currentPlayer,ServerCommand.SYSMSG+" "+originalMsg.getCommand()+" "+result+parameters);	
 	}
-
+	
 	public Room getRoomByName(String name){
 		boolean foundRoom=false;
 
@@ -99,10 +121,12 @@ public class ContainerSingleton {
 		Room room = getRoomByName(message.getParameter(0));
 		if(room!=null){ //we want to join this room
 			if(addPlayerToRoomIfPossible(room, player)){
-				triggerCallback(player, "SYSMSG JOIN "+Result.ACCEPTED);
+				ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG , ClientCommand.LISTGAMES ,ClientCommand.QUIT};
+				sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
 			}
 			else{
-				triggerCallback(player, "SYSMSG JOIN "+Result.REJECTED);
+				//ClientCommand[] newAcceptableCommands = {ClientCommand.JOIN, ClientCommand.LISTGAMES, ClientCommand.QUIT};
+				sendSYSMSG(player, Result.REJECTED, message ,null, null);
 			}
 		}
 		else{ //there is no room with this name! create this room..
@@ -112,27 +136,33 @@ public class ContainerSingleton {
 				roomsList.add(newRoom);
 				if(playerIsCurrentlyInARoom){/* Check if we can take the player out from his current room and switch to the new room */
 					if(addPlayerToRoomIfPossible(newRoom,player)){
-						triggerCallback(player, "SYSMSG JOIN "+Result.ACCEPTED);
+						ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG, ClientCommand.LISTGAMES ,ClientCommand.QUIT};
+						sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
 					}
 					else{
-						triggerCallback(player, "SYSMSG JOIN "+Result.REJECTED);
+						//ClientCommand[] newAcceptableCommands = {ClientCommand.JOIN, ClientCommand.LISTGAMES, ClientCommand.QUIT};
+						sendSYSMSG(player, Result.REJECTED, message ,null, null);
 					}
 				}
 				else{
 					player.setCurrentRoom(newRoom);
 					newRoom.addPlayer(player);
-					triggerCallback(player, "SYSMSG JOIN "+Result.ACCEPTED);
+					ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG ,ClientCommand.QUIT};
+					sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
+					
 				}
 		}
 		
 	}
 
+	
+	
 	public void handleMsg(Message message, Player player){
 		String messageToBeSent=message.getParameter(0);
 		player.getCurrentRoom().triggerAllCallbacks(messageToBeSent);
-		triggerCallback(player, "SYSMSG MSG"+Result.ACCEPTED);
 		
-		//Is there any case in which we should reject?
+		ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG, ClientCommand.LISTGAMES ,ClientCommand.QUIT};
+		sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
 	}
 	
 	public void handleListGames(Message message,Player player){
@@ -141,47 +171,57 @@ public class ContainerSingleton {
 		for(String gameName : supportedGames){
 			supportedGamesStr+=gameName;
 		}
-		
-		triggerCallback(player, "SYSMSG LISTGAMES "+Result.ACCEPTED+supportedGamesStr);
-		
-		//Is there a case where this is rejected??
+		ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.LISTGAMES, ClientCommand.MSG ,ClientCommand.QUIT};
+		sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, supportedGamesStr);
 	}
 	
 	public void handleStartGame(Message message, Player player){
-		player.getCurrentRoom().startNewGame(); //bad - inside it is specific to bluffer!!
-		player.getCurrentRoom().getGame().setGameState(GameState.Active);
-		player.getCurrentRoom().getGame().askQuestion();
-		triggerCallback(player, "SYSMSG STARTGAME "+Result.ACCEPTED);
-		//Is there a scenario in which this should be rejected?
+		if(player.getCurrentRoom()==null){
+			ClientCommand[] newAcceptableCommands = {ClientCommand.JOIN,ClientCommand.QUIT};
+			sendSYSMSG(player, Result.REJECTED, message ,newAcceptableCommands, null);
+		}
+		else if(player.getCurrentRoom().getGame()==null){ //there is no active game
+			player.getCurrentRoom().startNewGame(); //bad - inside it is specific to bluffer!!
+			player.getCurrentRoom().getGame().setGameState(GameState.Active);
+			player.getCurrentRoom().getGame().askQuestion();
+			
+			ClientCommand[] newAcceptableCommands = {ClientCommand.TXTRESP, ClientCommand.MSG};
+			sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
+		}
+		else{
+			//ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG ,ClientCommand.QUIT};
+			sendSYSMSG(player, Result.REJECTED, message ,null, null);
+		}
 	}
 	
 	
 	public void processMessage(Message message, Player currentPlayer){
-		if(message.getCommand().equals(ClientCommand.NICK)){
+		if(message.getCommand().equals(ClientCommand.NICK) && currentPlayer.isCommandAccepted(ClientCommand.NICK)){
 			handleNick(message,currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.JOIN)){
+		else if(message.getCommand().equals(ClientCommand.JOIN) && currentPlayer.isCommandAccepted(ClientCommand.JOIN)){
 			handleJoin(message, currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.MSG)){
+		else if(message.getCommand().equals(ClientCommand.MSG) && currentPlayer.isCommandAccepted(ClientCommand.MSG)){
 			handleMsg(message, currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.LISTGAMES)){
+		else if(message.getCommand().equals(ClientCommand.LISTGAMES) && currentPlayer.isCommandAccepted(ClientCommand.LISTGAMES)){
 			handleListGames(message, currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.STARTGAME)){
+		else if(message.getCommand().equals(ClientCommand.STARTGAME) && currentPlayer.isCommandAccepted(ClientCommand.STARTGAME)){
 			handleStartGame(message, currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.TXTRESP)){
-			//Forward the message to the game!
+		else if(message.getCommand().equals(ClientCommand.TXTRESP) && currentPlayer.isCommandAccepted(ClientCommand.TXTRESP)){
 			currentPlayer.getCurrentRoom().getGame().processTxtResp(message, currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.SELECTRESP)){
-			//Forward the message to the game!
-			currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
+		else if(message.getCommand().equals(ClientCommand.SELECTRESP) && currentPlayer.isCommandAccepted(ClientCommand.SELECTRESP)){
+				currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
 		}
-		else if(message.getCommand().equals(ClientCommand.QUIT)){
+		else if(message.getCommand().equals(ClientCommand.QUIT) && currentPlayer.isCommandAccepted(ClientCommand.QUIT)){
 	
+		}
+		else{
+			sendSYSMSG(currentPlayer, Result.REJECTED, message , null , null);
 		}
 	}
 	

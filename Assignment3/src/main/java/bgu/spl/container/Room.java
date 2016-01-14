@@ -19,18 +19,14 @@ public class Room {
 	private Game game;
 	private LinkedList<Player> playersList = new LinkedList<Player>();
 	private LinkedList<String> supportedGames = new LinkedList<String>();
-	//private Map<Player, ProtocolCallback> mapPlayerToCallback = new HashMap<Player,ProtocolCallback>();
 	
-	//we need to map the players to their callbacks..
-	//because when we need to send a message to all the players
 	
 	public Room(String roomName){
 		this.roomName=roomName;
 	}
 	
 	public void addPlayer(Player player){
-		playersList.add(player);
-		//mapPlayerToCallback.put(player, callback); 
+		playersList.add(player); 
 	}
 	
 	public LinkedList<Player> getPlayers(){
@@ -45,6 +41,13 @@ public class Room {
 		return game;
 	}
 	
+	private void triggerCallback(ProtocolCallback callback, String messageToBeSent){
+		try {
+			callback.sendMessage(messageToBeSent);
+		} catch (IOException e) {
+			System.out.println("Error occured - couldn't invoke callbak");
+		}
+	}
 	
 	//Big problem!!! I Specificy BLUFFER HERREEE!
 	public void startNewGame(){
@@ -53,12 +56,7 @@ public class Room {
 	
 	public void triggerAllCallbacks(String msg){
 		for(Player player : playersList){
-			try {
-				player.getCallback().sendMessage(msg);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			};
+			triggerCallback(player.getCallback(), msg);
 		}
 	}
 	

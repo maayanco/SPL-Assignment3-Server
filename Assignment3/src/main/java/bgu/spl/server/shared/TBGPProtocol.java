@@ -9,6 +9,8 @@ import bgu.spl.container.ContainerSingleton;
 import bgu.spl.container.Player;
 import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.Message;
+import bgu.spl.server.passive.Result;
+import bgu.spl.server.passive.ServerCommand;
 import bgu.spl.server.threadperclient.AsyncServerProtocol;
 import bgu.spl.server.threadperclient.ProtocolCallback;
 
@@ -29,28 +31,36 @@ public class TBGPProtocol implements AsyncServerProtocol<String>{
 	public boolean isEnd(String msg) {
 		return msg.equals(TERMINATION_MESSAGE);
 	}
-
-	public void processMessage(String msg, ProtocolCallback<String> callback) {
-		if(!msg.getClass().equals(String.class)){ //check that message is a string..
-			///then don't do anything!! return like.. sysmessage that this is bad or something!
-			return;
+	
+	private void triggerCallback(String msg, ProtocolCallback<String> callback){
+		try {
+			callback.sendMessage(msg);
+		} catch (IOException e) {
+			System.out.println("An error has occured while invoking ProtocolCallback");
 		}
-		
-		player.setCallback(callback);
-		
-		Message message = new Message(msg);
-		
-		if(!message.isValid()){
-			try {
-				callback.sendMessage("SYSMSG "+msg+" Rejected");
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	}
+	public void processMessage(String msg, ProtocolCallback<String> callback) {
+		//If msg is not a String - return invalid
+		if(!msg.getClass().equals(String.class)){ 
+			triggerCallback(ServerCommand.SYSMSG+" "+Result.UNIDENTIFIED, callback);
 		}
 		else{
-			container.processMessage(message, player);
+			//Set the player's callback 
+			player.setCallback(callback);
+			
+			//Convert the msg string to a Message type
+			Message message = new Message(msg);
+			
+			//If m
+			if(!message.isValid()){
+				triggerCallback(ServerCommand.SYSMSG+" "+Result.UNIDENTIFIED, callback);
+			}
+			else{
+				//Message is valid - we forward it to the container
+				container.processMessage(message, player);
+			}
 		}
+		
 	}
 
 

@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 
 import bgu.spl.server.json.Database;
 import bgu.spl.server.json.Input;
+import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.Message;
 import bgu.spl.server.passive.Result;
 import bgu.spl.server.passive.ServerCommand;
@@ -22,11 +23,11 @@ import bgu.spl.server.threadperclient.ProtocolCallback;
 public class Bluffer implements Game{
 
 	private static final Logger Log = Logger.getLogger(Bluffer.class.getName());
-	private GameState gameState = GameState.Not_Active;
+	//private GameState gameState = GameState.Not_Active;
 	private LinkedList<Round> roundsList = new LinkedList<Round>(); 
 	private LinkedList<Player> playersList = new LinkedList<Player>();
-	private Map<Player, Integer> mapPlayersToScores = new HashMap<Player,Integer>(); //map 
-	//private Map<Player,ProtocolCallback> mapPlayersToCallbacks = new HashMap<Player,ProtocolCallback>();
+	private Map<Player, Integer> mapPlayersToScores = new HashMap<Player,Integer>();
+	
 
 	public Bluffer(LinkedList<Player> inputPlayersList){
 		/** Load the questions */
@@ -79,19 +80,19 @@ public class Bluffer implements Game{
 	}
 
 	public void processTxtResp(Message message, Player currentPlayer) {
-		if(gameState.equals(GameState.Not_Active)){
-			triggerCallback(currentPlayer.getCallback(), "SYSMSG TXTRESP "+Result.REJECTED);
+		/*if(gameState.equals(GameState.Not_Active)){
+			triggerCallback(currentPlayer.getCallback(),ServerCommand.SYSMSG+" "+ClientCommand.TXTRESP+" "+Result.REJECTED);
 		}
-		else{
+		else{*/
 			String bluffedAnswer=message.getParameter(0);
 			Round currentRound = getCurrentRound();
 			currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
 			if(currentRound.isAllBluffedMessagesArrived()){
 				//Now we will send everyone a SELECTRESP
-				triggerCallback(currentPlayer.getCallback(), "SYSMSG TXTRESP "+Result.ACCEPTED);
-				sendMessageToAllPlayers("ASKCHOICES "+currentRound.getAllAnswers());
+				triggerCallback(currentPlayer.getCallback(), ServerCommand.SYSMSG+" "+ClientCommand.TXTRESP+" "+Result.ACCEPTED);
+				sendMessageToAllPlayers(ServerCommand.ASKCHOICES+" "+currentRound.getAllAnswers());
 			}
-		}
+		/*}*/
 	}
 
 	public void processSelectResp(Message message, Player currentPlayer) {
