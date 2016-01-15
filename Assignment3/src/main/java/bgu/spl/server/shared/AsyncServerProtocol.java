@@ -1,4 +1,6 @@
-package bgu.spl.server.threadperclient;
+package bgu.spl.server.shared;
+
+import bgu.spl.server.threadperclient.ProtocolCallback;
 
 /**
  * A protocol that describes the behavior of the server .
@@ -22,7 +24,7 @@ public interface AsyncServerProtocol <T > extends ServerProtocol <T > {
 	boolean isEnd ( T msg ) ;
 	/**
 	 * Is the protocol in a closing state ?.
-	 * When a protocol is in a closing state , it ’s handler should write
+	 * When a protocol is in a closing state , it ï¿½s handler should write
      * out all pending data ,
 	 * and close the connection .
 	 *

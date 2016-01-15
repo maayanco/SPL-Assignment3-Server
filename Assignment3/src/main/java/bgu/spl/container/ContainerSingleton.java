@@ -147,7 +147,7 @@ public class ContainerSingleton {
 				else{
 					player.setCurrentRoom(newRoom);
 					newRoom.addPlayer(player);
-					ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG ,ClientCommand.QUIT};
+					ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG, ClientCommand.LISTGAMES ,ClientCommand.QUIT};
 					sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
 					
 				}
@@ -158,8 +158,7 @@ public class ContainerSingleton {
 	
 	
 	public void handleMsg(Message message, Player player){
-		String messageToBeSent=message.getParameter(0);
-		player.getCurrentRoom().triggerAllCallbacks(messageToBeSent);
+		player.getCurrentRoom().handleMSG(player,message);
 		
 		ClientCommand[] newAcceptableCommands = {ClientCommand.STARTGAME, ClientCommand.MSG, ClientCommand.LISTGAMES ,ClientCommand.QUIT};
 		sendSYSMSG(player, Result.ACCEPTED, message ,newAcceptableCommands, null);
@@ -194,6 +193,25 @@ public class ContainerSingleton {
 		}
 	}
 	
+	public void handleTxtresp(Message message, Player currentPlayer){
+		boolean allAnswersArrived = currentPlayer.getCurrentRoom().getGame().processTxtResp(message, currentPlayer);
+		
+		ClientCommand[] newAcceptableCommands = {ClientCommand.SELECTRESP};
+		sendSYSMSG(currentPlayer, Result.ACCEPTED, message ,newAcceptableCommands, null);
+		
+		if(allAnswersArrived){
+			String allAnswers=currentPlayer.getCurrentRoom().getGame().getAllAnswers();
+			currentPlayer.getCurrentRoom().getGame().sendMessageToAllPlayers(ServerCommand.ASKCHOICES+" "+allAnswers);
+		}
+	}
+	
+	public void handleSelectresp(Message message, Player currentPlayer){
+		currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
+	}
+	
+	public void handleQuit(Message message, Player currentPlayer){
+		
+	}
 	
 	public void processMessage(Message message, Player currentPlayer){
 		if(message.getCommand().equals(ClientCommand.NICK) && currentPlayer.isCommandAccepted(ClientCommand.NICK)){
@@ -212,13 +230,13 @@ public class ContainerSingleton {
 			handleStartGame(message, currentPlayer);
 		}
 		else if(message.getCommand().equals(ClientCommand.TXTRESP) && currentPlayer.isCommandAccepted(ClientCommand.TXTRESP)){
-			currentPlayer.getCurrentRoom().getGame().processTxtResp(message, currentPlayer);
+			handleTxtresp(message, currentPlayer);
 		}
 		else if(message.getCommand().equals(ClientCommand.SELECTRESP) && currentPlayer.isCommandAccepted(ClientCommand.SELECTRESP)){
-				currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
+			handleSelectresp(message, currentPlayer);
 		}
 		else if(message.getCommand().equals(ClientCommand.QUIT) && currentPlayer.isCommandAccepted(ClientCommand.QUIT)){
-	
+			handleQuit(message,currentPlayer);
 		}
 		else{
 			sendSYSMSG(currentPlayer, Result.REJECTED, message , null , null);

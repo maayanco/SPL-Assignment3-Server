@@ -13,6 +13,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import bgu.spl.server.shared.AsyncServerProtocol;
+import bgu.spl.server.shared.TBGPProtocol;
+
 
 /**
  * An implementation of the Reactor pattern.
@@ -199,7 +202,7 @@ public class Reactor<T> implements Runnable {
             int port = Integer.parseInt(args[0]);
             int poolSize = Integer.parseInt(args[1]);
 
-            Reactor<StringMessage> reactor = startEchoServer(port, poolSize);
+            Reactor<String> reactor = startEchoServer(port, poolSize);
 
             Thread thread = new Thread(reactor);
             thread.start();
@@ -210,10 +213,10 @@ public class Reactor<T> implements Runnable {
         }
     }
 
-    public static Reactor<StringMessage> startEchoServer(int port, int poolSize) {
-        ServerProtocolFactory<StringMessage> protocolMaker = new ServerProtocolFactory<StringMessage>() {
-            public AsyncServerProtocol<StringMessage> create() {
-                return new EchoProtocol();
+    public static Reactor<String> startEchoServer(int port, int poolSize) {
+        ServerProtocolFactory<String> protocolMaker = new ServerProtocolFactory<String>() {
+            public AsyncServerProtocol<String> create() {
+                return new TBGPProtocol();
             }
         };
 
@@ -225,7 +228,7 @@ public class Reactor<T> implements Runnable {
             }
         };
 
-        Reactor<StringMessage> reactor = new Reactor<StringMessage>(port, poolSize, protocolMaker, tokenizerMaker);
+        Reactor<String> reactor = new Reactor(port, poolSize, protocolMaker, tokenizerMaker);
         return reactor;
     }
 }

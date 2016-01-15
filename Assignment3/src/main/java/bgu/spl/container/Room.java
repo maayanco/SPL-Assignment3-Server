@@ -9,6 +9,8 @@ import java.util.logging.Logger;
 
 import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.Message;
+import bgu.spl.server.passive.Result;
+import bgu.spl.server.passive.ServerCommand;
 import bgu.spl.server.threadperclient.ProtocolCallback;
 
 public class Room {
@@ -57,6 +59,19 @@ public class Room {
 	public void triggerAllCallbacks(String msg){
 		for(Player player : playersList){
 			triggerCallback(player.getCallback(), msg);
+		}
+	}
+	
+	public void handleMSG(Player currentPlayer, Message message){
+		String messageToBeSent="";
+		for(int i=0; i<message.getParameterLength(); i++){
+			messageToBeSent+=" "+message.getParameter(i);
+		}
+
+		for(Player player : playersList){
+			if(!player.equals(currentPlayer)){
+				triggerCallback(player.getCallback(), ServerCommand.USRMSG+" "+messageToBeSent);
+			}
 		}
 	}
 	

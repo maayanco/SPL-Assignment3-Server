@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.util.Vector;
 
-public class FixedSeparatorMessageTokenizer implements MessageTokenizer<StringMessage> {
+public class FixedSeparatorMessageTokenizer implements MessageTokenizer<string> {
 
    private final String _messageSeparator;
 
@@ -60,14 +60,14 @@ public class FixedSeparatorMessageTokenizer implements MessageTokenizer<StringMe
     * Get the next complete message if it exists, advancing the tokenizer to the next message.
     * @return the next complete message, and null if no complete message exist.
     */
-   public synchronized StringMessage nextMessage() {
+   public synchronized String nextMessage() {
       String message = null;
       int messageEnd = this._stringBuf.indexOf(this._messageSeparator);
       if (messageEnd > -1) {
          message = this._stringBuf.substring(0, messageEnd);
          this._stringBuf.delete(0, messageEnd+this._messageSeparator.length());
       }
-      return new StringMessage(message);
+      return new String(message);
    }
 
    /**
@@ -75,7 +75,7 @@ public class FixedSeparatorMessageTokenizer implements MessageTokenizer<StringMe
     *
     * @return a ByteBuffer with the message content converted to bytes, after framing information has been added.
     */
-   public ByteBuffer getBytesForMessage(StringMessage msg)  throws CharacterCodingException {
+   public ByteBuffer getBytesForMessage(String msg)  throws CharacterCodingException {
       StringBuilder sb = new StringBuilder(msg.getMessage());
       sb.append(this._messageSeparator);
       ByteBuffer bb = this._encoder.encode(CharBuffer.wrap(sb));

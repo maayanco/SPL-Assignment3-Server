@@ -7,10 +7,12 @@ public class Message {
 	private boolean isValid=false;
 	private ClientCommand command;
 	private ArrayList<String> parameters = new ArrayList<String>();
+	private int parameterLength;
 	
 	public Message(String originalMessage){
 		//Check if string is valid
 		String[] splitedMessageArr = originalMessage.split(" ");
+		
 		
 		if(splitedMessageArr.length<1){
 			System.out.println("Received Illegal Command");
@@ -18,15 +20,17 @@ public class Message {
 		}
 		
 		this.isValid=true;
-		
+			
 		parameters = new ArrayList<String>();
-		
+
 		setCommand(splitedMessageArr[0]);
 		
 
 		for(int i=1; i<splitedMessageArr.length; i++){
 			parameters.add(splitedMessageArr[i]);
 		}
+		
+		parameterLength=parameters.size();
 
 		
 	}
@@ -37,6 +41,7 @@ public class Message {
 	
 	
 	private void setCommand(String strCommand){
+		strCommand=strCommand.replaceAll("(\\r|\\n)", "");
 		if(strCommand.equals(ClientCommand.NICK.toString())){
 			command=ClientCommand.NICK;
 		}
@@ -77,4 +82,7 @@ public class Message {
 		return null;
 	}
 	
+	public int getParameterLength(){
+		return parameterLength;
+	}
 }

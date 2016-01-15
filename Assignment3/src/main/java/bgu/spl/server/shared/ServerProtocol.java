@@ -1,4 +1,6 @@
-package bgu.spl.server.threadperclient;
+package bgu.spl.server.shared;
+
+import bgu.spl.server.threadperclient.ProtocolCallback;
 
 /**
  * A protocol that describes the behaviour of the server .

@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import bgu.spl.container.ContainerSingleton;
 import bgu.spl.container.Player;
+import bgu.spl.server.shared.AsyncServerProtocol;
 
 public class YoProtocol implements AsyncServerProtocol{
 

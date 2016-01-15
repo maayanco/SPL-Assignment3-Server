@@ -11,7 +11,6 @@ import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.Message;
 import bgu.spl.server.passive.Result;
 import bgu.spl.server.passive.ServerCommand;
-import bgu.spl.server.threadperclient.AsyncServerProtocol;
 import bgu.spl.server.threadperclient.ProtocolCallback;
 
 public class TBGPProtocol implements AsyncServerProtocol<String>{

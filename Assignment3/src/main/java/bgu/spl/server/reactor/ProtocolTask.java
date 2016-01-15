@@ -3,6 +3,8 @@ package bgu.spl.server.reactor;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 
+import bgu.spl.server.shared.ServerProtocol;
+
 
 /**
  * This class supplies some data to the protocol, which then processes the data,
@@ -27,15 +29,32 @@ public class ProtocolTask<T> implements Runnable {
       // go over all complete messages and process them.
       while (_tokenizer.hasMessage()) {
          T msg = _tokenizer.nextMessage();
-         T response = this._protocol.processMessage(msg);
-         if (response != null) {
-            try {
-               ByteBuffer bytes = _tokenizer.getBytesForMessage(response);
-               this._handler.addOutData(bytes);
-            } catch (CharacterCodingException e) { e.printStackTrace(); }
-         }
+         this._protocol.processMessage(msg, response ->{
+        	 if (response != null) {
+                 try {
+                    ByteBuffer bytes = _tokenizer.getBytesForMessage(response);
+                    this._handler.addOutData(bytes);
+                 } catch (CharacterCodingException e) { e.printStackTrace(); }
+              }
+         });
       }
 	}
+	
+	/*// we synchronize on ourselves, in case we are executed by several threads
+		// from the thread pool.
+		public synchronized void run() {
+	      // go over all complete messages and process them.
+	      while (_tokenizer.hasMessage()) {
+	         T msg = _tokenizer.nextMessage();
+	         T response = this._protocol.processMessage(msg);
+	         if (response != null) {
+	            try {
+	               ByteBuffer bytes = _tokenizer.getBytesForMessage(response);
+	               this._handler.addOutData(bytes);
+	            } catch (CharacterCodingException e) { e.printStackTrace(); }
+	         }
+	      }
+		}*/
 
 	public void addBytes(ByteBuffer b) {
 		_tokenizer.addBytes(b);

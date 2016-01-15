@@ -23,7 +23,7 @@ import bgu.spl.server.threadperclient.ProtocolCallback;
 public class Bluffer implements Game{
 
 	private static final Logger Log = Logger.getLogger(Bluffer.class.getName());
-	//private GameState gameState = GameState.Not_Active;
+	private GameState gameState = GameState.Not_Active;
 	private LinkedList<Round> roundsList = new LinkedList<Round>(); 
 	private LinkedList<Player> playersList = new LinkedList<Player>();
 	private Map<Player, Integer> mapPlayersToScores = new HashMap<Player,Integer>();
@@ -79,7 +79,11 @@ public class Bluffer implements Game{
 		return roundsList.getFirst();
 	}
 
-	public void processTxtResp(Message message, Player currentPlayer) {
+	public String getAllAnswers(){
+		return getCurrentRound().getAllAnswers();
+	}
+	
+	public boolean processTxtResp(Message message, Player currentPlayer) {
 		/*if(gameState.equals(GameState.Not_Active)){
 			triggerCallback(currentPlayer.getCallback(),ServerCommand.SYSMSG+" "+ClientCommand.TXTRESP+" "+Result.REJECTED);
 		}
@@ -87,11 +91,13 @@ public class Bluffer implements Game{
 			String bluffedAnswer=message.getParameter(0);
 			Round currentRound = getCurrentRound();
 			currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
+			
 			if(currentRound.isAllBluffedMessagesArrived()){
-				//Now we will send everyone a SELECTRESP
-				triggerCallback(currentPlayer.getCallback(), ServerCommand.SYSMSG+" "+ClientCommand.TXTRESP+" "+Result.ACCEPTED);
+				return true;
 				sendMessageToAllPlayers(ServerCommand.ASKCHOICES+" "+currentRound.getAllAnswers());
 			}
+			
+			return false;
 		/*}*/
 	}
 
