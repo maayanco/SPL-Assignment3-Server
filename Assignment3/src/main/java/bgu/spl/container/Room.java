@@ -1,79 +1,129 @@
 package bgu.spl.container;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.logging.Logger;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import bgu.spl.server.passive.ClientCommand;
-import bgu.spl.server.passive.Message;
-import bgu.spl.server.passive.Result;
-import bgu.spl.server.passive.ServerCommand;
-import bgu.spl.server.threadperclient.ProtocolCallback;
-
+/**
+ * Represents a room and contains a game which might be in progress or not
+ * And a list of players subscribed to this room
+ */
 public class Room {
-	
-	private static final Logger Log = Logger.getLogger(Bluffer.class.getName());
-	private String roomName;
-	//private GameState gameState;
-	private Game game;
-	private LinkedList<Player> playersList = new LinkedList<Player>();
-	private LinkedList<String> supportedGames = new LinkedList<String>();
-	
-	
-	public Room(String roomName){
-		this.roomName=roomName;
-	}
-	
-	public void addPlayer(Player player){
-		playersList.add(player); 
-	}
-	
-	public LinkedList<Player> getPlayers(){
-		return new LinkedList<Player>(playersList);
-	}
-	
-	public String getRoomName(){
-		return roomName;
-	}
-	
-	public Game getGame(){
-		return game;
-	}
-	
-	private void triggerCallback(ProtocolCallback callback, String messageToBeSent){
-		try {
-			callback.sendMessage(messageToBeSent);
-		} catch (IOException e) {
-			System.out.println("Error occured - couldn't invoke callbak");
-		}
-	}
-	
-	//Big problem!!! I Specificy BLUFFER HERREEE!
-	public void startNewGame(){
-		game = new Bluffer(playersList);
-	}
-	
-	public void triggerAllCallbacks(String msg){
-		for(Player player : playersList){
-			triggerCallback(player.getCallback(), msg);
-		}
-	}
-	
-	public void handleMSG(Player currentPlayer, Message message){
-		String messageToBeSent="";
-		for(int i=0; i<message.getParameterLength(); i++){
-			messageToBeSent+=" "+message.getParameter(i);
-		}
 
-		for(Player player : playersList){
-			if(!player.equals(currentPlayer)){
-				triggerCallback(player.getCallback(), ServerCommand.USRMSG+" "+messageToBeSent);
+	private String roomName;
+	private Game game;
+	private Queue<Player> playersList = new ConcurrentLinkedQueue<Player>();
+
+	/**
+	 * Constructor - sets roomName as the name of the room
+	 * @param roomName
+	 */
+	public Room(String roomName) {
+			this.roomName = roomName;
+	}
+
+	/**
+	 * Initializes a new game instance using the GameFactory
+	 */
+	public void startNewGame() {
+		GameFactory gameFactory = new GameFactory();
+		/* synchronized(game){ */
+		/* synchronized(playersList){ */
+		game = gameFactory.create(playersList);
+		game.processStartGame();
+		/* } */
+		/* } */
+	}
+
+	/**
+	 * Sends the provided message to all players currently in the room
+	 * @param message
+	 */
+	public void sendToAllPlayers(String message) {
+		synchronized (playersList) {
+			for (Player player : playersList) {
+				player.triggerCallback(message);
 			}
 		}
 	}
-	
-}
 
+	/**
+	 * @return a clone of the  playersList
+	 */
+	public Queue<Player> getPlayersList() {
+		return new ConcurrentLinkedQueue(playersList);
+	}
+
+	/**
+	 * If a game is not currently in progress - remove the player from
+	 * playersList and return true (if removal was successful). If a game is in
+	 * progress - return false.
+	 * 
+	 * @param currentPlayer - the player which will be removed from the room
+	 * @return true if successful, false otherwise
+	 */
+	public boolean removePlayerFromRoom(Player currentPlayer) {
+
+		if (game != null) {
+			// A game is currently in progress - can't remove player
+			return false;
+		} else {
+			// A game is not in progress-
+				synchronized (playersList) {
+					if (playersList.contains(currentPlayer)) {
+						playersList.remove(currentPlayer);
+					}
+					return true;
+				}
+		}
+
+	}
+
+	/**
+	 * If a game is not currently in progress - add the player to the
+	 * playersList and return true (if addition was successful). If a game is
+	 * in progress- return false;
+	 * 
+	 * @param currentPlayer - the player which will be removed from the room
+	 * @return true if successful, false otherwise
+	 */
+	public boolean addPlayerToRoom(Player currentPlayer) {
+		/* synchronized(game){ */
+		if (game != null) {
+			// A game is currently in progrees - can't add player
+			return false;
+		} else {
+			// A game is not currently in progress
+			/* synchronized(playersList){ */
+			if (!playersList.contains(currentPlayer)) {
+				playersList.add(currentPlayer);
+			}
+			/* } */
+			return true;
+		}
+		/* } */
+	}
+
+	/**
+	 * finishes the current game by setting the game field to null
+	 */
+	public void finishGame() {
+		synchronized (game) {
+			this.game = null;
+		}
+	}
+
+	/**
+	 * @return the room name
+	 */
+	public String getRoomName() {
+		return roomName;
+	}
+
+	/**
+	 * @return the current game
+	 */
+	public Game getGame() {
+		return game;
+	}
+
+}

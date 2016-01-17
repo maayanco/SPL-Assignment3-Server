@@ -3,11 +3,12 @@ package bgu.spl.container;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 import com.google.gson.Gson;
@@ -16,153 +17,226 @@ import bgu.spl.server.json.Database;
 import bgu.spl.server.json.Input;
 import bgu.spl.server.passive.ClientCommand;
 import bgu.spl.server.passive.Message;
-import bgu.spl.server.passive.Result;
 import bgu.spl.server.passive.ServerCommand;
-import bgu.spl.server.threadperclient.ProtocolCallback;
 
-public class Bluffer implements Game{
+/**
+ * Implements the game interface 
+ * This class represents the specific bluffer game logic
+ */
+public class Bluffer implements Game {
 
-	private static final Logger Log = Logger.getLogger(Bluffer.class.getName());
-	private GameState gameState = GameState.Not_Active;
-	private LinkedList<Round> roundsList = new LinkedList<Round>(); 
-	private LinkedList<Player> playersList = new LinkedList<Player>();
-	private Map<Player, Integer> mapPlayersToScores = new HashMap<Player,Integer>();
+	private Queue<Round> roundsList;
+	private Queue<Player> playersList;
+	private Map<Player, Integer> mapPlayersToScores;
+	private static final int NUMBER_OF_ROUNDS = 3;
+
+	/**
+	 * Constructor
+	 * Reads json file and 
+	 * @param inputPlayersList
+	 */
+	public Bluffer(Queue<Player> inputPlayersList) {
+		//Initiailze fields
+		roundsList = new ConcurrentLinkedQueue<Round>();
+		playersList = new ConcurrentLinkedQueue<Player>();
+		mapPlayersToScores = new ConcurrentHashMap<Player, Integer>();
+		
+		for (Player player : inputPlayersList) {
+			this.playersList.add(player);
+			mapPlayersToScores.put(player, 0);
+		}
+		
+		//Read the json file 
+		readJson();
+	}
 	
-
-	public Bluffer(LinkedList<Player> inputPlayersList){
-		/** Load the questions */
+	/**
+	 * Read the json file into the java jsonObject and insert the data into the rounds list
+	 * as Round objects 
+	 */
+	public void readJson(){
+		// Load the json file into the jsonObject
 		String jsonPath = "bluffer.json";
 		Database jsonObject = null;
 		try {
 			Gson gson = new Gson();
 			BufferedReader br;
 			br = new BufferedReader(new FileReader(jsonPath));
-			jsonObject= gson.fromJson(br, Database.class);
+			jsonObject = gson.fromJson(br, Database.class);
 		} catch (FileNotFoundException e) {
-			System.out.println("Severe ERROR - couldn't read json file");
-			//!!!
+			System.out.println("ERROR - couldn't read json file");
 		}
-
-
-		for(Player player : inputPlayersList){
-			this.playersList.add(player);
-			mapPlayersToScores.put(player, 0);
-		}
-
-		//this.mapPlayersToCallbacks=mapPlayersToCallbacks;
-
-		if(jsonObject!=null){
-			//Now read the contents of the jsonObject 
+		
+		// Now read the contents of the jsonObject and insert into the rounds list
+		if (jsonObject != null) {
 			Input[] inputArray = jsonObject.getQuestions();
-			for(int i=0; i<inputArray.length; i++){
+			for (int i = 0; i < inputArray.length && i<NUMBER_OF_ROUNDS; i++) {
 				Input currentInput = inputArray[i];
 				roundsList.add(new Round(currentInput.getQuestionText(), currentInput.getRealAnswer(), playersList));
 			}
 		}
 	}
 
-	public void askQuestion(){
+	@Override
+	/**
+	 * Invokes the askQuestion method and sets all players acceptable commands to be TXTRESP
+	 */
+	public void processStartGame() {
+		askQuestion();
+
+		// Set the new acceptable commands to:
+		LinkedList<ClientCommand> newAcceptableCommands = new LinkedList<ClientCommand>();
+		newAcceptableCommands.add(ClientCommand.TXTRESP);
+		for (Player player : playersList) {
+			player.setAcceptedCommands(newAcceptableCommands);
+		}
+	}
+
+	/**
+	 * returns the question associated to the current round of the game
+	 */
+	private void askQuestion() {
 		Round currentRound = getCurrentRound();
 		String question = currentRound.getQuestion();
-		sendMessageToAllPlayers(ServerCommand.ASKTXT+" "+question);
+		sendMessageToAllPlayers(ServerCommand.ASKTXT + " " + question);
 	}
 
-	private void triggerCallback(ProtocolCallback callback, String messageToBeSent){
-		try {
-			callback.sendMessage(messageToBeSent);
-		} catch (IOException e) {
+	@Override
+	/**
+	 * 
+	 */
+	public String processTxtResp(Message message, Player currentPlayer) {
+		String bluffedAnswer = message.getParameter(0);
+		Round currentRound = getCurrentRound();
+		currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
 
+		String response = "";
+		if (currentRound.isAllBluffedMessagesArrived()) {
+			response = ServerCommand.ASKCHOICES + " " + currentRound.getAllAnswers();
 		}
+		return response;
 	}
 
-	public Round getCurrentRound(){
-		return roundsList.getFirst();
-	}
-
-	public String getAllAnswers(){
-		return getCurrentRound().getAllAnswers();
-	}
-	
-	public boolean processTxtResp(Message message, Player currentPlayer) {
-		/*if(gameState.equals(GameState.Not_Active)){
-			triggerCallback(currentPlayer.getCallback(),ServerCommand.SYSMSG+" "+ClientCommand.TXTRESP+" "+Result.REJECTED);
-		}
-		else{*/
-			String bluffedAnswer=message.getParameter(0);
-			Round currentRound = getCurrentRound();
-			currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
-			
-			if(currentRound.isAllBluffedMessagesArrived()){
-				return true;
-				sendMessageToAllPlayers(ServerCommand.ASKCHOICES+" "+currentRound.getAllAnswers());
-			}
-			
-			return false;
-		/*}*/
-	}
-
+	@Override
 	public void processSelectResp(Message message, Player currentPlayer) {
 		String selectedAnswerParam = message.getParameter(0);
-		getCurrentRound().updateSelectedAnswer(selectedAnswerParam,currentPlayer);
-		if(getCurrentRound().isAllPlayersSelectedAnswers()){
-			finishRound();
+		if (!getCurrentRound().updateSelectedAnswer(selectedAnswerParam, currentPlayer)) {
+			return;
 		}
-	}
+		sendGameMsg("Correct answer: " + getCurrentRound().getRealAnswer(), currentPlayer);
 
-	public void sendRoundStatusToAllPlayers(){
+		// set current player to receive txtresp
+		ClientCommand[] newAcceptableCommands = {};
+		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 
-	}
+		if (getCurrentRound().isAllPlayersSelectedAnswers()) {
+			// Finish round - Go over players, calculate their score in the
+			// round and send
+			for (Player player : playersList) {
+				int currentScore = mapPlayersToScores.get(player);
+				int roundScore = getCurrentRound().getScoreByPlayer(player);
+				mapPlayersToScores.replace(player, currentScore + roundScore);
 
-	public void finishRound(){
-		//delete the first question, send messages to all players
-		Round currentRound = getCurrentRound();
+				// we want to trigger the callbacks of each player
+				int playersScore = getCurrentRound().getScoreByPlayer(player);
+				if (getCurrentRound().isPlayerCorrect(player)) {
+					sendGameMsg(" correct! " + playersScore, player);
+				} else {
+					sendGameMsg(" wrong! " + playersScore, player);
+				}
 
-		//Iterate over all the players, update the total score
-		sendMessageToAllPlayers("GAMEMSG The Correct answer is: "+currentRound.getRealAnswer());
-
-		//String summaryString="";
-		for(Player player : playersList){
-			int currentScore = mapPlayersToScores.get(player);
-			int roundScore = currentRound.getScoreByPlayer(player);
-			mapPlayersToScores.replace(player, currentScore+roundScore);
-
-			//we want to trigger the callbacks of each player
-
-			ProtocolCallback callback = player.getCallback();
-			int playersScore = getCurrentRound().getScoreByPlayer(player);
-			if(getCurrentRound().isPlayerCorrect(player)){
-				triggerCallback(callback, ServerCommand.GAMEMSG+" correct! "+playersScore);
 			}
-			else{
-				triggerCallback(callback,ServerCommand.GAMEMSG+" wrong! +"+playersScore+"pts");
+
+			roundsList.remove();
+
+			// Start new round if possible
+			if (getCurrentRound() != null) {
+				askQuestion();
+
+				// Set the new acceptable commands for all the players in the game
+				for (Player player : playersList) {
+					ClientCommand[] acceptableCommands = {ClientCommand.TXTRESP};
+					setPlayerAcceptableCommands(player, acceptableCommands);
+				}
+
+			} else {
+				// Finish the game! send summaries to everyone..
+				for (Player player : playersList) {
+					ClientCommand[] acceptableCommands = { ClientCommand.MSG, ClientCommand.JOIN, ClientCommand.STARTGAME, ClientCommand.LISTGAMES, ClientCommand.QUIT };
+					setPlayerAcceptableCommands(player, acceptableCommands);
+					sendGameMsg(getGameSummary(), player);
+
+				}
+				currentPlayer.getCurrentRoom().finishGame();
+
 			}
 		}
-
-		//iterate over the mapAnswersToPlayers - 
-
-		//sendMessageToAllPlayers("GAMEMSG Summary:"+summaryString);
-
-		roundsList.removeFirst();
-
 	}
 
+	@Override
+	/**
+	 * invokes the triggerCallback method of the current player with the
+	 * provided message, sending a message of command type GAMEMSG
+	 */
+	public void sendGameMsg(String message, Player currentPlayer) {
+		currentPlayer.triggerCallback(ServerCommand.GAMEMSG + " " + message);
+	}
 
-	private void sendMessageToAllPlayers(String messagToBeSent){
-		for(Player player : playersList){
-			triggerCallback(player.getCallback(), messagToBeSent);
+	/**
+	 * Converts the ClientCommand array into a linkedList of ClientCommands and set's the users acceptable commands
+	 * to this new list
+	 * @param currentPlayer - the player to be changed
+	 * @param arr - array of acceptable Client commands
+	 */
+	public void setPlayerAcceptableCommands(Player currentPlayer, ClientCommand[] arr) {
+		if (arr != null) {
+			LinkedList<ClientCommand> newAcceptableCommands = new LinkedList<ClientCommand>();
+			for (ClientCommand command : arr) {
+				newAcceptableCommands.add(command);
+			}
+			currentPlayer.setAcceptedCommands(newAcceptableCommands);
+		}
+	}
+	
+	/** 
+	 *  @returns string representation of the players and the sum of their
+	 *  scores of all the rounds
+	 */
+	private String getGameSummary() {
+		String summary = "Summary:";
+		//not synched because when the game summary occurs theres no chance for any change in the 
+		//players in the playerList.. or in the mapPlayersToScores
+		/*synchronized(playersList){*/
+			for (Player player : playersList) {
+				int currentPlayersScore = mapPlayersToScores.get(player);
+				summary += " " + player.getPlayerName() + ": " + currentPlayersScore + "pts";
+			}
+		/*}*/
+		return summary;
+	}
+
+	/**
+	 * @return the current round (Which is the first Object in the rounds list)
+	 * or null if the list is empty
+	 */
+	private Round getCurrentRound() {
+		synchronized(roundsList){
+			if (!roundsList.isEmpty())
+				return roundsList.peek();
+		}
+		return null;
+	}
+
+	/**
+	 * Go over the players list and trigger their callbacks with the provided message
+	 * @param messageToBeSent
+	 */
+	private void sendMessageToAllPlayers(String messageToBeSent) {
+		synchronized(playersList){
+			for (Player player : playersList) {
+				player.triggerCallback(messageToBeSent);
+			}
 		}
 	}
 
-	private void sendMessageToPlayer(String messageToBeSent, Player player){
-		triggerCallback(player.getCallback(), messageToBeSent);
-	}
-
-	public GameState getGameState(){
-		return gameState;
-	}
-
-	public void setGameState(GameState gameState){
-		this.gameState=gameState;
-	}
 }
-

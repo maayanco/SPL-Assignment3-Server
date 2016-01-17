@@ -1,4 +1,4 @@
-package bgu.spl.server.reactor;
+package bgu.spl.server.reactor.reactor;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -34,8 +34,7 @@ public class ConnectionAcceptor<T> {
 	 * <UL>
 	 * <LI>Creates a SocketChannel for it
 	 * <LI>Creates a ConnectionHandler for it
-	 * <LI>Registers the SocketChannel and the ConnectionHandler to the
-	 * Selector
+	 * <LI>Registers the SocketChannel and the ConnectionHandler to the Selector
 	 * </UL>
 	 * 
 	 * @throws IOException

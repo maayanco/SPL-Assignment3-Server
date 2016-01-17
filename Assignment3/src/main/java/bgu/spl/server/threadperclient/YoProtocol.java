@@ -6,26 +6,26 @@ import bgu.spl.container.ContainerSingleton;
 import bgu.spl.container.Player;
 import bgu.spl.server.shared.AsyncServerProtocol;
 
-public class YoProtocol implements AsyncServerProtocol{
+public class YoProtocol implements AsyncServerProtocol {
 
 	private boolean _shouldClose = false;
-	
-	public YoProtocol(Player player, ContainerSingleton container){
-		
+
+	public YoProtocol(Player player, ContainerSingleton container) {
+
 	}
-	
+
 	@Override
 	public void processMessage(Object msg, ProtocolCallback callback) {
 		System.out.println("yyyy");
-		System.out.println("the received message is: "+msg);
-		
+		System.out.println("the received message is: " + msg);
+
 		try {
 			callback.sendMessage("this is from the server");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	@Override
@@ -40,8 +40,8 @@ public class YoProtocol implements AsyncServerProtocol{
 
 	@Override
 	public void connectionTerminated() {
-		_shouldClose=true;
-		
+		_shouldClose = true;
+
 	}
 
 }

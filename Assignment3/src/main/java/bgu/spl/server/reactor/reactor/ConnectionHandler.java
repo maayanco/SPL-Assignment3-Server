@@ -1,16 +1,16 @@
-package bgu.spl.server.reactor;
+package bgu.spl.server.reactor.reactor;
 
-import java.nio.channels.SocketChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.ClosedChannelException;
-import java.nio.ByteBuffer;
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.Vector;
 import java.util.logging.Logger;
 
-import bgu.spl.server.shared.AsyncServerProtocol;
-
+import bgu.spl.server.reactor.protocol.AsyncServerProtocol;
+import bgu.spl.server.reactor.tokenizer.MessageTokenizer;
 
 /**
  * Handles messages from clients
@@ -88,8 +88,8 @@ public class ConnectionHandler<T> {
 	 * 
 	 * @throws
 	 * 
-	 * @throws IOException
-	 *             in case of an IOException during reading
+	 * 			@throws
+	 *             IOException in case of an IOException during reading
 	 */
 	public void read() {
 		// do not read if protocol has terminated. only write of pending data is
@@ -118,7 +118,7 @@ public class ConnectionHandler<T> {
 			return;
 		}
 
-		//add the buffer to the protocol task
+		// add the buffer to the protocol task
 		buf.flip();
 		_task.addBytes(buf);
 		// add the protocol task to the reactor
@@ -134,7 +134,8 @@ public class ConnectionHandler<T> {
 	 * @throws IOException
 	 *             if the write operation fails
 	 * @throws ClosedChannelException
-	 *             if the channel have been closed while registering to the Selector
+	 *             if the channel have been closed while registering to the
+	 *             Selector
 	 */
 	public synchronized void write() {
 		if (_outData.size() == 0) {
