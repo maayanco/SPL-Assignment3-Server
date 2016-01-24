@@ -20,6 +20,7 @@ import bgu.spl.server.reactor.tokenizer.FixedSeparatorMessageTokenizer;
 import bgu.spl.server.reactor.tokenizer.MessageTokenizer;
 import bgu.spl.server.reactor.tokenizer.StringMessage;
 import bgu.spl.server.reactor.tokenizer.TokenizerFactory;
+import bgu.spl.server.shared.TBGPProtocol;
 
 /**
  * An implementation of the Reactor pattern.
@@ -223,7 +224,8 @@ public class Reactor<T> implements Runnable {
 	public static Reactor<StringMessage> startEchoServer(int port, int poolSize) {
 		ServerProtocolFactory<StringMessage> protocolMaker = new ServerProtocolFactory<StringMessage>() {
 			public AsyncServerProtocol<StringMessage> create() {
-				return new EchoProtocol();
+				/*return new EchoProtocol();*/
+				return new TBGPProtocol();
 			}
 		};
 
