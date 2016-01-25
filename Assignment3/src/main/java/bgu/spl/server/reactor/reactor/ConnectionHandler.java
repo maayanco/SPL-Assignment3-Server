@@ -9,8 +9,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Vector;
 import java.util.logging.Logger;
 
-import bgu.spl.server.reactor.protocol.AsyncServerProtocol;
-import bgu.spl.server.reactor.tokenizer.MessageTokenizer;
+import bgu.spl.server.protocol.AsyncServerProtocol;
+import bgu.spl.server.tokenizer.MessageTokenizer;
 
 /**
  * Handles messages from clients

@@ -5,10 +5,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
-import bgu.spl.server.passive.ClientCommand;
-import bgu.spl.server.passive.Message;
+import bgu.spl.server.passive.Command;
+import bgu.spl.server.passive.StringMessage;
 import bgu.spl.server.passive.Result;
-import bgu.spl.server.passive.ServerCommand;
+import bgu.spl.server.passive.StringMessage;
 
 /**
  * This class is a thread safe singleton that manages all the logic of the game.
@@ -52,26 +52,26 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void processMessage(Message message, Player currentPlayer) {
-		if (message.getCommand().equals(ClientCommand.NICK) && currentPlayer.isCommandAccepted(ClientCommand.NICK)) {
+	public void processMessage(StringMessage message, Player currentPlayer) {
+		if (message.getCommand().equals(Command.NICK) && currentPlayer.isCommandAccepted(Command.NICK)) {
 			handleNick(message, currentPlayer);
-		} else if (message.getCommand().equals(ClientCommand.JOIN)
-				&& currentPlayer.isCommandAccepted(ClientCommand.JOIN)) {
+		} else if (message.getCommand().equals(Command.JOIN)
+				&& currentPlayer.isCommandAccepted(Command.JOIN)) {
 			handleJoin(message, currentPlayer);
-		} else if (message.getCommand().equals(ClientCommand.MSG)
-				&& currentPlayer.isCommandAccepted(ClientCommand.MSG)) {
+		} else if (message.getCommand().equals(Command.MSG)
+				&& currentPlayer.isCommandAccepted(Command.MSG)) {
 			handleMsg(message, currentPlayer);
-		} else if (message.getCommand().equals(ClientCommand.LISTGAMES)
-				&& currentPlayer.isCommandAccepted(ClientCommand.LISTGAMES)) {
+		} else if (message.getCommand().equals(Command.LISTGAMES)
+				&& currentPlayer.isCommandAccepted(Command.LISTGAMES)) {
 			handleListGames(message, currentPlayer);
-		} else if (message.getCommand().equals(ClientCommand.STARTGAME)
-				&& currentPlayer.isCommandAccepted(ClientCommand.STARTGAME)) {
+		} else if (message.getCommand().equals(Command.STARTGAME)
+				&& currentPlayer.isCommandAccepted(Command.STARTGAME)) {
 			handleStartGame(message, currentPlayer);
-		} else if (message.getCommand().equals(ClientCommand.TXTRESP)
-				&& currentPlayer.isCommandAccepted(ClientCommand.TXTRESP)) {
+		} else if (message.getCommand().equals(Command.TXTRESP)
+				&& currentPlayer.isCommandAccepted(Command.TXTRESP)) {
 			handleTxtresp(message, currentPlayer);
-		} else if (message.getCommand().equals(ClientCommand.SELECTRESP)
-				&& currentPlayer.isCommandAccepted(ClientCommand.SELECTRESP)) {
+		} else if (message.getCommand().equals(Command.SELECTRESP)
+				&& currentPlayer.isCommandAccepted(Command.SELECTRESP)) {
 			handleSelectresp(message, currentPlayer);
 		} else {
 			sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
@@ -88,19 +88,19 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleNick(Message message, Player currentPlayer) {
+	public void handleNick(StringMessage message, Player currentPlayer) {
 		String requestedNick = message.getParameter(0);
 		synchronized (playersNames) {
 			boolean foundNick = playersNames.contains(requestedNick);
 			if (!foundNick) {
 				currentPlayer.setPlayerName(message.getParameter(0));
 				playersNames.add(requestedNick);
-				ClientCommand[] newAcceptableCommands = { ClientCommand.JOIN, ClientCommand.LISTGAMES,
-						ClientCommand.QUIT };
+				Command[] newAcceptableCommands = { Command.JOIN, Command.LISTGAMES,
+						Command.QUIT };
 				setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 				sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 			} else {
-				ClientCommand[] newAcceptableCommands = { ClientCommand.NICK, ClientCommand.QUIT };
+				Command[] newAcceptableCommands = { Command.NICK, Command.QUIT };
 				setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 				sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
 			}
@@ -117,7 +117,7 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleJoin(Message message, Player currentPlayer) {
+	public void handleJoin(StringMessage message, Player currentPlayer) {
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		if (currentRoom != null) {
 			synchronized (currentRoom) {
@@ -141,8 +141,8 @@ public class ContainerSingleton {
 			boolean isAdditionSucsessfull = requestedRoom.addPlayerToRoom(currentPlayer);
 			if (isAdditionSucsessfull) {
 				currentPlayer.setCurrentRoom(requestedRoom);
-				ClientCommand[] newAcceptableCommands = { ClientCommand.STARTGAME, ClientCommand.MSG,
-						ClientCommand.LISTGAMES, ClientCommand.QUIT };
+				Command[] newAcceptableCommands = { Command.STARTGAME, Command.MSG,
+						Command.LISTGAMES, Command.QUIT };
 				setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 				sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 			} else {
@@ -162,20 +162,20 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleMsg(Message message, Player currentPlayer) {
+	public void handleMsg(StringMessage message, Player currentPlayer) {
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		synchronized (currentRoom) {
 			Queue<Player> roomsPlayersList = currentRoom.getPlayersList();
 			for (Player player : roomsPlayersList) {
 				if (!player.equals(currentPlayer)) {
-					player.triggerCallback(ServerCommand.USRMSG + " " + message.getParameters());
+					player.triggerCallback(new StringMessage(Command.USRMSG + " " + message.getParameters()));
 				}
 			}
 		}
 
 		// Set new acceptable commands for the currentPlayer: STARTGAME, MSG,LISTGAMES, QUIT
-		ClientCommand[] newAcceptableCommands = { ClientCommand.STARTGAME, ClientCommand.MSG, ClientCommand.LISTGAMES,
-				ClientCommand.QUIT };
+		Command[] newAcceptableCommands = { Command.STARTGAME, Command.MSG, Command.LISTGAMES,
+				Command.QUIT };
 		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 	}
@@ -190,7 +190,7 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleListGames(Message message, Player currentPlayer) {
+	public void handleListGames(StringMessage message, Player currentPlayer) {
 		// Go over the list of games
 		String supportedGamesStr = "";
 		for (String gameName : supportedGames) {
@@ -211,11 +211,11 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleStartGame(Message message, Player currentPlayer) {
+	public void handleStartGame(StringMessage message, Player currentPlayer) {
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		if (currentRoom != null) {
 			synchronized (currentRoom) {
-				currentRoom.startNewGame();
+				currentRoom.startNewGame(message);
 			}
 		} else {
 			sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
@@ -231,12 +231,12 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleTxtresp(Message message, Player currentPlayer) {
+	public void handleTxtresp(StringMessage message, Player currentPlayer) {
 		//Don't think this needs synchronize - but check again
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		String response = currentRoom.getGame().processTxtResp(message, currentPlayer);
 
-		ClientCommand[] newAcceptableCommands = { ClientCommand.SELECTRESP };
+		Command[] newAcceptableCommands = { Command.SELECTRESP };
 		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 		
@@ -253,13 +253,22 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
-	public void handleSelectresp(Message message, Player currentPlayer) {
-		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
+	public void handleSelectresp(StringMessage message, Player currentPlayer) {
+		//sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 		currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
 	
 	}
 
-
+	public boolean handleQuit(Player currentPlayer){
+		if(currentPlayer.isCommandAccepted(Command.QUIT)){
+			//we need to remove the player from everything!!!!
+			removePlayer(currentPlayer);
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
 	/**
 	 * This method sends a SYSMSG to the provided player
 	 * @param currentPlayer - the player to which the sysmsg will be sent
@@ -267,13 +276,13 @@ public class ContainerSingleton {
 	 * @param originalMsg - original message received from the client
 	 * @param additionalParameters - additional parameters to be sent with the sysmsg (After the result)
 	 */
-	private void sendSYSMSG(Player currentPlayer, Result result, Message originalMsg, String additionalParameters) {
+	private void sendSYSMSG(Player currentPlayer, Result result, StringMessage originalMsg, String additionalParameters) {
 		String parameters = "";
 		if (additionalParameters != null && additionalParameters != "") {
 			parameters += " " + additionalParameters;
 		}
 		currentPlayer
-				.triggerCallback(ServerCommand.SYSMSG + " " + originalMsg.getCommand() + " " + result + parameters);
+				.triggerCallback(new StringMessage(Command.SYSMSG + " " + originalMsg.getCommand() + " " + result + parameters));
 	}
 
 	/**
@@ -282,10 +291,10 @@ public class ContainerSingleton {
 	 * @param currentPlayer - the player to be changed
 	 * @param arr - array of acceptable Client commands
 	 */
-	public void setPlayerAcceptableCommands(Player currentPlayer, ClientCommand[] arr) {
+	public void setPlayerAcceptableCommands(Player currentPlayer, Command[] arr) {
 		if (arr != null) {
-			LinkedList<ClientCommand> newAcceptableCommands = new LinkedList<ClientCommand>();
-			for (ClientCommand command : arr) {
+			LinkedList<Command> newAcceptableCommands = new LinkedList<Command>();
+			for (Command command : arr) {
 				newAcceptableCommands.add(command);
 			}
 			currentPlayer.setAcceptedCommands(newAcceptableCommands);

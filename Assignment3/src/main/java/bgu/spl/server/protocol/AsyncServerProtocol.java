@@ -1,4 +1,4 @@
-package bgu.spl.server.shared;
+package bgu.spl.server.protocol;
 
 import bgu.spl.server.threadperclient.ProtocolCallback;
 

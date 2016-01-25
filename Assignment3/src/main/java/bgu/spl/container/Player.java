@@ -3,19 +3,20 @@ package bgu.spl.container;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import bgu.spl.server.passive.ClientCommand;
+import bgu.spl.server.passive.Command;
+import bgu.spl.server.passive.StringMessage;
 import bgu.spl.server.threadperclient.ProtocolCallback;
 
 public class Player {
 
 	private String playerName = "";
 	private Room currentRoom;
-	private ProtocolCallback<String> callback;
-	private LinkedList<ClientCommand> acceptedCommands = new LinkedList<ClientCommand>();
+	private ProtocolCallback callback;
+	private LinkedList<Command> acceptedCommands = new LinkedList<Command>();
 
 	public Player() {
-		acceptedCommands.add(ClientCommand.NICK);
-		acceptedCommands.add(ClientCommand.QUIT);
+		acceptedCommands.add(Command.NICK);
+		acceptedCommands.add(Command.QUIT);
 	}
 
 	public String getPlayerName() {
@@ -48,17 +49,17 @@ public class Player {
 		}
 	}
 
-	public boolean isCommandAccepted(ClientCommand command) {
+	public boolean isCommandAccepted(Command command) {
 		return acceptedCommands.contains(command);
 	}
 
-	public void setAcceptedCommands(LinkedList<ClientCommand> newCommands) {
+	public void setAcceptedCommands(LinkedList<Command> newCommands) {
 		synchronized (acceptedCommands) { // ??
 			this.acceptedCommands = newCommands;
 		}
 	}
 
-	public void triggerCallback(String messageToBeSent) {
+	public void triggerCallback(StringMessage messageToBeSent) {
 		try {
 			callback.sendMessage(messageToBeSent);
 		} catch (IOException e) {

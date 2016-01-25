@@ -13,14 +13,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import bgu.spl.server.reactor.protocol.AsyncServerProtocol;
-import bgu.spl.server.reactor.protocol.EchoProtocol;
-import bgu.spl.server.reactor.protocol.ServerProtocolFactory;
-import bgu.spl.server.reactor.tokenizer.FixedSeparatorMessageTokenizer;
-import bgu.spl.server.reactor.tokenizer.MessageTokenizer;
-import bgu.spl.server.reactor.tokenizer.StringMessage;
-import bgu.spl.server.reactor.tokenizer.TokenizerFactory;
-import bgu.spl.server.shared.TBGPProtocol;
+import bgu.spl.server.passive.StringMessage;
+import bgu.spl.server.protocol.AsyncServerProtocol;
+import bgu.spl.server.protocol.ServerProtocol;
+import bgu.spl.server.protocol.ServerProtocolFactory;
+import bgu.spl.server.protocol.TBGPProtocol;
+import bgu.spl.server.tokenizer.FixedSeparatorMessageTokenizer;
+import bgu.spl.server.tokenizer.MessageTokenizer;
+import bgu.spl.server.tokenizer.TokenizerFactory;
 
 /**
  * An implementation of the Reactor pattern.
@@ -210,7 +210,7 @@ public class Reactor<T> implements Runnable {
 			int port = Integer.parseInt(args[0]);
 			int poolSize = Integer.parseInt(args[1]);
 
-			Reactor<StringMessage> reactor = startEchoServer(port, poolSize);
+			Reactor<StringMessage> reactor = startServer(port, poolSize);
 
 			Thread thread = new Thread(reactor);
 			thread.start();
@@ -221,10 +221,9 @@ public class Reactor<T> implements Runnable {
 		}
 	}
 
-	public static Reactor<StringMessage> startEchoServer(int port, int poolSize) {
-		ServerProtocolFactory<StringMessage> protocolMaker = new ServerProtocolFactory<StringMessage>() {
-			public AsyncServerProtocol<StringMessage> create() {
-				/*return new EchoProtocol();*/
+	public static Reactor<StringMessage> startServer(int port, int poolSize){
+		ServerProtocolFactory<StringMessage> protocolMaker = new ServerProtocolFactory<StringMessage>(){
+			public AsyncServerProtocol<StringMessage> create(){
 				return new TBGPProtocol();
 			}
 		};
@@ -239,4 +238,5 @@ public class Reactor<T> implements Runnable {
 		Reactor<StringMessage> reactor = new Reactor<StringMessage>(port, poolSize, protocolMaker, tokenizerMaker);
 		return reactor;
 	}
-}
+
+	}

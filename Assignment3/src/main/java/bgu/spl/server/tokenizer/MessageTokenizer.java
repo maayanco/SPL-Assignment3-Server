@@ -1,4 +1,4 @@
-package bgu.spl.server.reactor.tokenizer;
+package bgu.spl.server.tokenizer;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;

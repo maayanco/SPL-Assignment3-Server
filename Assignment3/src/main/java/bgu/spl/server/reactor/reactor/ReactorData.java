@@ -3,8 +3,8 @@ package bgu.spl.server.reactor.reactor;
 import java.nio.channels.Selector;
 import java.util.concurrent.ExecutorService;
 
-import bgu.spl.server.reactor.protocol.ServerProtocolFactory;
-import bgu.spl.server.reactor.tokenizer.TokenizerFactory;
+import bgu.spl.server.protocol.ServerProtocolFactory;
+import bgu.spl.server.tokenizer.TokenizerFactory;
 
 /**
  * a simple data structure that hold information about the reactor, including

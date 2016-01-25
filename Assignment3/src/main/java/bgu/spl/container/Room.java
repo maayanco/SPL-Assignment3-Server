@@ -3,6 +3,8 @@ package bgu.spl.container;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import bgu.spl.server.passive.StringMessage;
+
 /**
  * Represents a room and contains a game which might be in progress or not
  * And a list of players subscribed to this room
@@ -10,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Room {
 
 	private String roomName;
-	private Game game;
+	private Game<StringMessage> game;
 	private Queue<Player> playersList = new ConcurrentLinkedQueue<Player>();
 
 	/**
@@ -24,7 +26,7 @@ public class Room {
 	/**
 	 * Initializes a new game instance using the GameFactory
 	 */
-	public void startNewGame() {
+	public void startNewGame(StringMessage message) {
 		GameFactory gameFactory = new GameFactory();
 		/* synchronized(game){ */
 		/* synchronized(playersList){ */
@@ -41,7 +43,7 @@ public class Room {
 	public void sendToAllPlayers(String message) {
 		synchronized (playersList) {
 			for (Player player : playersList) {
-				player.triggerCallback(message);
+				player.triggerCallback(new StringMessage(message));
 			}
 		}
 	}
@@ -71,6 +73,7 @@ public class Room {
 				synchronized (playersList) {
 					if (playersList.contains(currentPlayer)) {
 						playersList.remove(currentPlayer);
+						currentPlayer.setCurrentRoom(null); //should the player be synched?
 					}
 					return true;
 				}

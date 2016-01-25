@@ -9,7 +9,8 @@ import java.util.Map;
 import java.util.Queue;
 
 import bgu.spl.server.passive.Result;
-import bgu.spl.server.passive.ServerCommand;
+import bgu.spl.server.passive.Command;
+import bgu.spl.server.passive.StringMessage;
 
 /**
  * Represents a round of the game includes: question, real answer, maps between players to bluffed answers, selected answers and round scores
@@ -102,9 +103,9 @@ public class Round {
 			isInvalid = true;
 		}
 
-		if (isInvalid) {
-			currentPlayer.triggerCallback(ServerCommand.SYSMSG + " " + Result.REJECTED);
-		}
+		/*if (isInvalid) {
+			currentPlayer.triggerCallback(new StringMessage(Command.SYSMSG + " " + Result.REJECTED));
+		}*/
 
 		return !isInvalid;
 

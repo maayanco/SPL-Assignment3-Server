@@ -1,13 +1,13 @@
 package bgu.spl.container;
 
-import bgu.spl.server.passive.Message;
+/*import bgu.spl.server.passive.StringMessage;*/
 
-public interface Game {
-	String processTxtResp(Message message, Player currentPlayer);
+public interface Game<T> {
+	String processTxtResp(T message, Player currentPlayer);
 
-	void processSelectResp(Message message, Player currentPlayer);
+	void processSelectResp(T message, Player currentPlayer);
 
-	void sendGameMsg(String message, Player currentPlayer);
+	void sendGameMsg(T message, Player currentPlayer);
 
 	void processStartGame();
 

@@ -1,0 +1,5 @@
+package bgu.spl.server.passive;
+
+public enum Command {
+	NICK, JOIN, MSG, LISTGAMES, STARTGAME, TXTRESP, SELECTRESP, QUIT, ASKTXT, ASKCHOICES, SYSMSG, GAMEMSG, USRMSG;
+}

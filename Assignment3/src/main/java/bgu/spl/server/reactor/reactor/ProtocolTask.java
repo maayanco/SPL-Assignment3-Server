@@ -3,9 +3,9 @@ package bgu.spl.server.reactor.reactor;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 
-import bgu.spl.server.reactor.protocol.ServerProtocol;
-import bgu.spl.server.reactor.tokenizer.MessageTokenizer;
-
+import bgu.spl.server.protocol.AsyncServerProtocol;
+import bgu.spl.server.protocol.ServerProtocol;
+import bgu.spl.server.tokenizer.MessageTokenizer;
 /**
  * This class supplies some data to the protocol, which then processes the data,
  * possibly returning a reply. This class is implemented as an executor task.
@@ -30,15 +30,19 @@ public class ProtocolTask<T> implements Runnable {
 		// go over all complete messages and process them.
 		while (_tokenizer.hasMessage()) {
 			T msg = _tokenizer.nextMessage();
-			T response = this._protocol.processMessage(msg);
-			if (response != null) {
-				try {
-					ByteBuffer bytes = _tokenizer.getBytesForMessage(response);
-					this._handler.addOutData(bytes);
-				} catch (CharacterCodingException e) {
-					e.printStackTrace();
+
+			this._protocol.processMessage(msg, response -> {
+				if (response != null) {
+					try {
+						ByteBuffer bytes = _tokenizer.getBytesForMessage(response);
+						this._handler.addOutData(bytes);
+					} catch (CharacterCodingException e) {
+						e.printStackTrace();
+					}
 				}
 			}
+					);
+
 		}
 	}
 

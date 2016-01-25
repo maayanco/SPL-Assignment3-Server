@@ -15,15 +15,15 @@ import com.google.gson.Gson;
 
 import bgu.spl.server.json.Database;
 import bgu.spl.server.json.Input;
-import bgu.spl.server.passive.ClientCommand;
-import bgu.spl.server.passive.Message;
-import bgu.spl.server.passive.ServerCommand;
+import bgu.spl.server.passive.Command;
+import bgu.spl.server.passive.Result;
+import bgu.spl.server.passive.StringMessage;
 
 /**
  * Implements the game interface 
  * This class represents the specific bluffer game logic
  */
-public class Bluffer implements Game {
+public class Bluffer implements Game<StringMessage> {
 
 	private Queue<Round> roundsList;
 	private Queue<Player> playersList;
@@ -85,8 +85,8 @@ public class Bluffer implements Game {
 		askQuestion();
 
 		// Set the new acceptable commands to:
-		LinkedList<ClientCommand> newAcceptableCommands = new LinkedList<ClientCommand>();
-		newAcceptableCommands.add(ClientCommand.TXTRESP);
+		LinkedList<Command> newAcceptableCommands = new LinkedList<Command>();
+		newAcceptableCommands.add(Command.TXTRESP);
 		for (Player player : playersList) {
 			player.setAcceptedCommands(newAcceptableCommands);
 		}
@@ -98,35 +98,39 @@ public class Bluffer implements Game {
 	private void askQuestion() {
 		Round currentRound = getCurrentRound();
 		String question = currentRound.getQuestion();
-		sendMessageToAllPlayers(ServerCommand.ASKTXT + " " + question);
+		sendMessageToAllPlayers(Command.ASKTXT + " " + question);
 	}
 
 	@Override
 	/**
 	 * 
 	 */
-	public String processTxtResp(Message message, Player currentPlayer) {
+	public String processTxtResp(StringMessage message, Player currentPlayer) {
 		String bluffedAnswer = message.getParameter(0);
 		Round currentRound = getCurrentRound();
 		currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
 
 		String response = "";
 		if (currentRound.isAllBluffedMessagesArrived()) {
-			response = ServerCommand.ASKCHOICES + " " + currentRound.getAllAnswers();
+			response = Command.ASKCHOICES + " " + currentRound.getAllAnswers();
 		}
 		return response;
 	}
 
 	@Override
-	public void processSelectResp(Message message, Player currentPlayer) {
+	public void processSelectResp(StringMessage message, Player currentPlayer) {
 		String selectedAnswerParam = message.getParameter(0);
 		if (!getCurrentRound().updateSelectedAnswer(selectedAnswerParam, currentPlayer)) {
+			currentPlayer.triggerCallback(new StringMessage(Command.SYSMSG +" "+message.getCommand()+" " + Result.REJECTED));
 			return;
 		}
-		sendGameMsg("Correct answer: " + getCurrentRound().getRealAnswer(), currentPlayer);
+		else{
+			currentPlayer.triggerCallback(new StringMessage(Command.SYSMSG +" "+message.getCommand()+" " + Result.ACCEPTED));
+		}
+		sendGameMsg(new StringMessage(Command.GAMEMSG + " " +"Correct answer: " + getCurrentRound().getRealAnswer()), currentPlayer);
 
 		// set current player to receive txtresp
-		ClientCommand[] newAcceptableCommands = {};
+		Command[] newAcceptableCommands = {};
 		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 
 		if (getCurrentRound().isAllPlayersSelectedAnswers()) {
@@ -140,9 +144,9 @@ public class Bluffer implements Game {
 				// we want to trigger the callbacks of each player
 				int playersScore = getCurrentRound().getScoreByPlayer(player);
 				if (getCurrentRound().isPlayerCorrect(player)) {
-					sendGameMsg(" correct! " + playersScore, player);
+					sendGameMsg(new StringMessage(Command.GAMEMSG + " " +"correct! " + playersScore), player);
 				} else {
-					sendGameMsg(" wrong! " + playersScore, player);
+					sendGameMsg(new StringMessage(Command.GAMEMSG + " " +"wrong! " + playersScore), player);
 				}
 
 			}
@@ -155,16 +159,16 @@ public class Bluffer implements Game {
 
 				// Set the new acceptable commands for all the players in the game
 				for (Player player : playersList) {
-					ClientCommand[] acceptableCommands = {ClientCommand.TXTRESP};
+					Command[] acceptableCommands = {Command.TXTRESP};
 					setPlayerAcceptableCommands(player, acceptableCommands);
 				}
 
 			} else {
 				// Finish the game! send summaries to everyone..
 				for (Player player : playersList) {
-					ClientCommand[] acceptableCommands = { ClientCommand.MSG, ClientCommand.JOIN, ClientCommand.STARTGAME, ClientCommand.LISTGAMES, ClientCommand.QUIT };
+					Command[] acceptableCommands = { Command.MSG, Command.JOIN, Command.STARTGAME, Command.LISTGAMES, Command.QUIT };
 					setPlayerAcceptableCommands(player, acceptableCommands);
-					sendGameMsg(getGameSummary(), player);
+					sendGameMsg(new StringMessage(Command.GAMEMSG + " " +getGameSummary()), player);
 
 				}
 				currentPlayer.getCurrentRoom().finishGame();
@@ -173,13 +177,15 @@ public class Bluffer implements Game {
 		}
 	}
 
+	//Command.GAMEMSG + " " + message
+	
 	@Override
 	/**
 	 * invokes the triggerCallback method of the current player with the
 	 * provided message, sending a message of command type GAMEMSG
 	 */
-	public void sendGameMsg(String message, Player currentPlayer) {
-		currentPlayer.triggerCallback(ServerCommand.GAMEMSG + " " + message);
+	public void sendGameMsg(StringMessage message, Player currentPlayer) {
+		currentPlayer.triggerCallback(message);
 	}
 
 	/**
@@ -188,10 +194,10 @@ public class Bluffer implements Game {
 	 * @param currentPlayer - the player to be changed
 	 * @param arr - array of acceptable Client commands
 	 */
-	public void setPlayerAcceptableCommands(Player currentPlayer, ClientCommand[] arr) {
+	public void setPlayerAcceptableCommands(Player currentPlayer, Command[] arr) {
 		if (arr != null) {
-			LinkedList<ClientCommand> newAcceptableCommands = new LinkedList<ClientCommand>();
-			for (ClientCommand command : arr) {
+			LinkedList<Command> newAcceptableCommands = new LinkedList<Command>();
+			for (Command command : arr) {
 				newAcceptableCommands.add(command);
 			}
 			currentPlayer.setAcceptedCommands(newAcceptableCommands);
@@ -234,9 +240,10 @@ public class Bluffer implements Game {
 	private void sendMessageToAllPlayers(String messageToBeSent) {
 		synchronized(playersList){
 			for (Player player : playersList) {
-				player.triggerCallback(messageToBeSent);
+				player.triggerCallback(new StringMessage(messageToBeSent));
 			}
 		}
 	}
+
 
 }
