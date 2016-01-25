@@ -107,6 +107,7 @@ public class Bluffer implements Game<StringMessage> {
 	 */
 	public String processTxtResp(StringMessage message, Player currentPlayer) {
 		String bluffedAnswer = message.getParameter(0);
+		bluffedAnswer = bluffedAnswer.toLowerCase();
 		Round currentRound = getCurrentRound();
 		currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
 
@@ -159,7 +160,7 @@ public class Bluffer implements Game<StringMessage> {
 
 				// Set the new acceptable commands for all the players in the game
 				for (Player player : playersList) {
-					Command[] acceptableCommands = {Command.TXTRESP};
+					Command[] acceptableCommands = {Command.TXTRESP, Command.MSG};
 					setPlayerAcceptableCommands(player, acceptableCommands);
 				}
 

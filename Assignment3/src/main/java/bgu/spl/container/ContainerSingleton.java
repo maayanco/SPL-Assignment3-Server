@@ -230,7 +230,7 @@ public class ContainerSingleton {
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		String response = currentRoom.getGame().processTxtResp(message, currentPlayer);
 
-		Command[] newAcceptableCommands = { Command.SELECTRESP };
+		Command[] newAcceptableCommands = { Command.SELECTRESP,Command.MSG };
 		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 
