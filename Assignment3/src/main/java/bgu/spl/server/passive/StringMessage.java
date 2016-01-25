@@ -12,6 +12,7 @@ public class StringMessage implements Message<StringMessage> {
 
 	
 	public StringMessage(String originalMessage) {
+		originalMessage = originalMessage.replaceAll("(\r|\r\n|\n)", "");
 		if(originalMessage==null){
 			return;
 		}
@@ -44,32 +45,32 @@ public class StringMessage implements Message<StringMessage> {
 	}
 
 	private void setCommand(String strCommand) {
-		
-		if (strCommand.equals(Command.NICK.toString())) {
+		//strCommand.replaceAll("(\r\n|\n|\r)", "");
+		if (strCommand.equalsIgnoreCase(Command.NICK.toString())) {
 			command = Command.NICK;
-		} else if (strCommand.equals(Command.JOIN.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.JOIN.toString())) {
 			command = Command.JOIN;
-		} else if (strCommand.equals(Command.MSG.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.MSG.toString())) {
 			command = Command.MSG;
-		} else if (strCommand.equals(Command.LISTGAMES.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.LISTGAMES.toString())) {
 			command = Command.LISTGAMES;
-		} else if (strCommand.equals(Command.STARTGAME.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.STARTGAME.toString())) {
 			command = Command.STARTGAME;
-		} else if (strCommand.equals(Command.TXTRESP.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.TXTRESP.toString())) {
 			command = Command.TXTRESP;
-		} else if (strCommand.equals(Command.SELECTRESP.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.SELECTRESP.toString())) {
 			command = Command.SELECTRESP;
-		} else if (strCommand.equals(Command.QUIT.toString())) {
+		} else if (strCommand.equalsIgnoreCase(Command.QUIT.toString())) {
 			command = Command.QUIT;
-		} else if(strCommand.equals(Command.ASKTXT.toString())){
+		} else if(strCommand.equalsIgnoreCase(Command.ASKTXT.toString())){
 			command = Command.ASKTXT;
-		} else if(strCommand.equals(Command.ASKCHOICES.toString())){
+		} else if(strCommand.equalsIgnoreCase(Command.ASKCHOICES.toString())){
 			command=Command.ASKCHOICES;
-		} else if(strCommand.equals(Command.SYSMSG.toString())){
+		} else if(strCommand.equalsIgnoreCase(Command.SYSMSG.toString())){
 		command=Command.SYSMSG;
-		} else if(strCommand.equals(Command.GAMEMSG.toString())){
+		} else if(strCommand.equalsIgnoreCase(Command.GAMEMSG.toString())){
 			command=Command.GAMEMSG;
-		} else if(strCommand.equals(Command.USRMSG.toString())){
+		} else if(strCommand.equalsIgnoreCase(Command.USRMSG.toString())){
 			command=Command.USRMSG;
 		}else {
 			isValid = false;

@@ -16,15 +16,15 @@ import bgu.spl.server.passive.StringMessage;
  *
  */
 public class ContainerSingleton {
-
+	
+	/*private GameFactory gameFactory = new GameFactory();*/
 	private Queue<Room> roomsList = new ConcurrentLinkedQueue<Room>();
 	private Queue<String> playersNames = new ConcurrentLinkedQueue<String>();
-	private LinkedList<String> supportedGames = new LinkedList<String>();
 
 	/**
-	 * Class that holds a field instance which contains the ContainerSingleton object 
-	 * (ConatinerSingleton constructor is invoked once, and from then on the same instance is
-	 * returned). 
+	 * Class that holds a field instance which contains the ContainerSingleton
+	 * object (ConatinerSingleton constructor is invoked once, and from then on
+	 * the same instance is returned).
 	 */
 	public static class ContainerHolder { // should this be static? not sure!!!
 		private static ContainerSingleton instance = new ContainerSingleton();
@@ -38,40 +38,39 @@ public class ContainerSingleton {
 	}
 
 	/**
-	 * Constructor 
+	 * Constructor
 	 */
 	public ContainerSingleton() {
-		supportedGames.add("Bluffer"); // Hack
+		
 	}
 
 	/**
-	 * Receives a message and checks if the command is acceptable by the user, 
-	 * if so invokes the appropriate handle method 
+	 * Receives a message and checks if the command is acceptable by the user,
+	 * if so invokes the appropriate handle method
+	 * 
 	 * @param message
 	 *            - the message received from the client
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
 	public void processMessage(StringMessage message, Player currentPlayer) {
-		if (message.getCommand().equals(Command.NICK) && currentPlayer.isCommandAccepted(Command.NICK)) {
+		if (message.getCommand().equals(Command.NICK) && currentPlayer.isCommandAccepted(Command.NICK) && message.getParameterLength()>0) {
 			handleNick(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.JOIN)
-				&& currentPlayer.isCommandAccepted(Command.JOIN)) {
+		} else if (message.getCommand().equals(Command.JOIN) && currentPlayer.isCommandAccepted(Command.JOIN) && message.getParameterLength()>0) {
 			handleJoin(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.MSG)
-				&& currentPlayer.isCommandAccepted(Command.MSG)) {
+		} else if (message.getCommand().equals(Command.MSG) && currentPlayer.isCommandAccepted(Command.MSG)
+				&& message.getParameterLength() > 0) {
 			handleMsg(message, currentPlayer);
 		} else if (message.getCommand().equals(Command.LISTGAMES)
 				&& currentPlayer.isCommandAccepted(Command.LISTGAMES)) {
 			handleListGames(message, currentPlayer);
 		} else if (message.getCommand().equals(Command.STARTGAME)
-				&& currentPlayer.isCommandAccepted(Command.STARTGAME)) {
+				&& currentPlayer.isCommandAccepted(Command.STARTGAME) && message.getParameterLength()>0) {
 			handleStartGame(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.TXTRESP)
-				&& currentPlayer.isCommandAccepted(Command.TXTRESP)) {
+		} else if (message.getCommand().equals(Command.TXTRESP) && currentPlayer.isCommandAccepted(Command.TXTRESP) && message.getParameterLength()>0) {
 			handleTxtresp(message, currentPlayer);
 		} else if (message.getCommand().equals(Command.SELECTRESP)
-				&& currentPlayer.isCommandAccepted(Command.SELECTRESP)) {
+				&& currentPlayer.isCommandAccepted(Command.SELECTRESP) && message.getParameterLength()>0) {
 			handleSelectresp(message, currentPlayer);
 		} else {
 			sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
@@ -95,12 +94,11 @@ public class ContainerSingleton {
 			if (!foundNick) {
 				currentPlayer.setPlayerName(message.getParameter(0));
 				playersNames.add(requestedNick);
-				Command[] newAcceptableCommands = { Command.JOIN, Command.LISTGAMES,
-						Command.QUIT };
+				Command[] newAcceptableCommands = { Command.JOIN, Command.LISTGAMES, Command.QUIT };
 				setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 				sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 			} else {
-				Command[] newAcceptableCommands = { Command.NICK, Command.QUIT };
+				Command[] newAcceptableCommands = { Command.JOIN,Command.NICK, Command.QUIT };
 				setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 				sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
 			}
@@ -141,8 +139,7 @@ public class ContainerSingleton {
 			boolean isAdditionSucsessfull = requestedRoom.addPlayerToRoom(currentPlayer);
 			if (isAdditionSucsessfull) {
 				currentPlayer.setCurrentRoom(requestedRoom);
-				Command[] newAcceptableCommands = { Command.STARTGAME, Command.MSG,
-						Command.LISTGAMES, Command.QUIT };
+				Command[] newAcceptableCommands = { Command.STARTGAME, Command.JOIN, Command.MSG, Command.LISTGAMES, Command.QUIT };
 				setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 				sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 			} else {
@@ -173,9 +170,9 @@ public class ContainerSingleton {
 			}
 		}
 
-		// Set new acceptable commands for the currentPlayer: STARTGAME, MSG,LISTGAMES, QUIT
-		Command[] newAcceptableCommands = { Command.STARTGAME, Command.MSG, Command.LISTGAMES,
-				Command.QUIT };
+		// Set new acceptable commands for the currentPlayer: STARTGAME,
+		// MSG,LISTGAMES, QUIT
+		Command[] newAcceptableCommands = { Command.STARTGAME, Command.MSG, Command.LISTGAMES, Command.QUIT };
 		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 	}
@@ -192,11 +189,7 @@ public class ContainerSingleton {
 	 */
 	public void handleListGames(StringMessage message, Player currentPlayer) {
 		// Go over the list of games
-		String supportedGamesStr = "";
-		for (String gameName : supportedGames) {
-			supportedGamesStr += gameName;
-		}
-
+		String supportedGamesStr = GameFactory.getSupportedGames();
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, supportedGamesStr);
 	}
 
@@ -215,7 +208,8 @@ public class ContainerSingleton {
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		if (currentRoom != null) {
 			synchronized (currentRoom) {
-				currentRoom.startNewGame(message);
+				if (!currentRoom.startNewGame(message))
+					sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
 			}
 		} else {
 			sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
@@ -232,64 +226,75 @@ public class ContainerSingleton {
 	 *            - the player associated with the client
 	 */
 	public void handleTxtresp(StringMessage message, Player currentPlayer) {
-		//Don't think this needs synchronize - but check again
+		// Don't think this needs synchronize - but check again
 		Room currentRoom = currentPlayer.getCurrentRoom();
 		String response = currentRoom.getGame().processTxtResp(message, currentPlayer);
 
 		Command[] newAcceptableCommands = { Command.SELECTRESP };
 		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
-		
+
 		if (response != null && !response.equals("")) {
 			currentRoom.sendToAllPlayers(response);
 		}
 
 	}
-	
-	/** 
+
+	/**
 	 * Forwards the SELECTRESP request to the game itself
+	 * 
 	 * @param message
 	 *            - the message received from the client
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
 	public void handleSelectresp(StringMessage message, Player currentPlayer) {
-		//sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
+		// sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 		currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
-	
+
 	}
 
-	public boolean handleQuit(Player currentPlayer){
-		if(currentPlayer.isCommandAccepted(Command.QUIT)){
-			//we need to remove the player from everything!!!!
+	public boolean handleQuit(Player currentPlayer) {
+		if (currentPlayer.isCommandAccepted(Command.QUIT)) {
+			// we need to remove the player from everything!!!!
 			removePlayer(currentPlayer);
 			return true;
-		}
-		else{
+		} else {
 			return false;
 		}
 	}
+
 	/**
 	 * This method sends a SYSMSG to the provided player
-	 * @param currentPlayer - the player to which the sysmsg will be sent
-	 * @param result - Accepted/Rejected/Unidentified
-	 * @param originalMsg - original message received from the client
-	 * @param additionalParameters - additional parameters to be sent with the sysmsg (After the result)
+	 * 
+	 * @param currentPlayer
+	 *            - the player to which the sysmsg will be sent
+	 * @param result
+	 *            - Accepted/Rejected/Unidentified
+	 * @param originalMsg
+	 *            - original message received from the client
+	 * @param additionalParameters
+	 *            - additional parameters to be sent with the sysmsg (After the
+	 *            result)
 	 */
-	private void sendSYSMSG(Player currentPlayer, Result result, StringMessage originalMsg, String additionalParameters) {
+	private void sendSYSMSG(Player currentPlayer, Result result, StringMessage originalMsg,
+			String additionalParameters) {
 		String parameters = "";
 		if (additionalParameters != null && additionalParameters != "") {
 			parameters += " " + additionalParameters;
 		}
-		currentPlayer
-				.triggerCallback(new StringMessage(Command.SYSMSG + " " + originalMsg.getCommand() + " " + result + parameters));
+		currentPlayer.triggerCallback(
+				new StringMessage(Command.SYSMSG + " " + originalMsg.getCommand() + " " + result + parameters));
 	}
 
 	/**
-	 * Converts the ClientCommand array into a linkedList of ClientCommands and set's the users acceptable commands
-	 * to this new list
-	 * @param currentPlayer - the player to be changed
-	 * @param arr - array of acceptable Client commands
+	 * Converts the ClientCommand array into a linkedList of ClientCommands and
+	 * set's the users acceptable commands to this new list
+	 * 
+	 * @param currentPlayer
+	 *            - the player to be changed
+	 * @param arr
+	 *            - array of acceptable Client commands
 	 */
 	public void setPlayerAcceptableCommands(Player currentPlayer, Command[] arr) {
 		if (arr != null) {
@@ -312,7 +317,7 @@ public class ContainerSingleton {
 	public Room getRoomByName(String name) {
 		synchronized (roomsList) {
 			for (Room room : roomsList) {
-				if (room.getRoomName().equals(name)) {
+				if (room.getRoomName().equalsIgnoreCase(name)) {
 					return room;
 				}
 			}
@@ -321,15 +326,16 @@ public class ContainerSingleton {
 	}
 
 	/**
-	 * Is invoked when a quit command is received - 
-	 * removes the provided player from the players room and from the players names list
+	 * Is invoked when a quit command is received - removes the provided player
+	 * from the players room and from the players names list
+	 * 
 	 * @param player
 	 */
-	public void removePlayer(Player player){
-		//should this be synchronized? don't think so..
+	public void removePlayer(Player player) {
+		// should this be synchronized? don't think so..
 		playersNames.remove(player.getPlayerName());
 		Room currentPlayersRoom = player.getCurrentRoom();
-		if(currentPlayersRoom!=null){
+		if (currentPlayersRoom != null) {
 			currentPlayersRoom.removePlayerFromRoom(player);
 		}
 	}

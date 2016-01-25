@@ -26,7 +26,7 @@ public class Round {
 
 	public boolean isPlayerCorrect(Player player) {
 		String playersAnswer = mapPlayersToSelectedAnswers.get(player);
-		return playersAnswer.equals(realAnswer);
+		return playersAnswer.equalsIgnoreCase(realAnswer);
 	}
 
 	public Round(String questionText, String realAnswer, Queue<Player> playersList) {

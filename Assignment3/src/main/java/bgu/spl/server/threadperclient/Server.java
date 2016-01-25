@@ -6,8 +6,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
+import java.util.Queue;
 
-
+import bgu.spl.container.Bluffer;
+import bgu.spl.container.Game;
+import bgu.spl.container.GameFactory;
+import bgu.spl.container.GameFactory;
+import bgu.spl.container.Player;
 import bgu.spl.container.Room;
 import bgu.spl.server.passive.StringMessage;
 import bgu.spl.server.protocol.AsyncServerProtocol;
@@ -25,12 +30,12 @@ public class Server {
 	private ServerProtocolFactory _protocolFactory;
 	private TokenizerFactory _tokenizerFactory;
 	
-	
 	public Server(int port, ServerProtocolFactory protocol,TokenizerFactory tokenizer){
 		_port = port;
 		_protocolFactory = protocol;
 		_tokenizerFactory = tokenizer;
 	}
+	
 	public static void main(String[] args) {
 		
 		int port;
@@ -53,10 +58,7 @@ public class Server {
 				System.out.println("Listening..");
 				Socket socket = serverSocket.accept();
 
-				/*Tokenizer tockenizer = new MessageTokenizer(new InputStreamReader(socket.getInputStream()));*/
 				Server server = startServer(port);
-				/*MessageTokenizer tockenizer = tokenizerMaker;
-				AsyncServerProtocol protocol = new TBGPProtocol();*/
 				Runnable connectionHandler = new ConnectionHandler(encoder, server._tokenizerFactory.create(), server._protocolFactory.create(), socket);
 				new Thread(connectionHandler).start();
 			}
@@ -83,6 +85,5 @@ public class Server {
 		Server server = new Server(port, protocolMaker, tokenizerMaker);
 		return server;
 	}
-	
 
 }

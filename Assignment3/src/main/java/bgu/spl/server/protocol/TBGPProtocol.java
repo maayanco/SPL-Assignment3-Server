@@ -3,6 +3,7 @@ package bgu.spl.server.protocol;
 import java.io.IOException;
 
 import bgu.spl.container.ContainerSingleton;
+import bgu.spl.container.GameFactory;
 import bgu.spl.container.Player;
 import bgu.spl.server.passive.Command;
 import bgu.spl.server.passive.StringMessage;
@@ -41,6 +42,7 @@ public class TBGPProtocol implements AsyncServerProtocol<StringMessage> {
 				if(container.handleQuit(player)){
 					//connectionTerminated(); //should be returned!
 					triggerCallback(Command.SYSMSG +" "+ msg.getCommand()+" "+ Result.ACCEPTED, callback);
+					connectionTerminated();
 				}
 				else{
 					triggerCallback(Command.SYSMSG +" "+ msg.getCommand()+" "+ Result.REJECTED, callback);
@@ -79,7 +81,7 @@ public class TBGPProtocol implements AsyncServerProtocol<StringMessage> {
 	@Override
 	public boolean isEnd(StringMessage message) {
 		//return message.equals(TERMINATION_MESSAGE);
-		return TERMINATION_MESSAGE.equals(message.getCommand().toString());
+		return TERMINATION_MESSAGE.equalsIgnoreCase(message.getCommand().toString());
 	}
 
 	/**

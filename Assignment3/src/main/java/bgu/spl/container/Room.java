@@ -26,12 +26,18 @@ public class Room {
 	/**
 	 * Initializes a new game instance using the GameFactory
 	 */
-	public void startNewGame(StringMessage message) {
+	public boolean startNewGame(StringMessage message) {
 		GameFactory gameFactory = new GameFactory();
 		/* synchronized(game){ */
 		/* synchronized(playersList){ */
-		game = gameFactory.create(playersList);
-		game.processStartGame();
+		game = gameFactory.create(playersList,message.getParameter(0));
+		if(game==null){
+			return false;
+		}
+		else{
+			game.processStartGame();
+			return true;
+		}
 		/* } */
 		/* } */
 	}
