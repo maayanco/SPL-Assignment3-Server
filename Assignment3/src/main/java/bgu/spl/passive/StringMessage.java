@@ -1,18 +1,36 @@
-package bgu.spl.server.passive;
+package bgu.spl.passive;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import bgu.spl.server.tokenizer.Message;
 
+/**
+ * This class represents a message of type string and contains the command field, and a parameters arraylist
+ * This class receives a string, splits it and sets the appropriate parts into the StringMessage fields: command, parametrs and also checks
+ * the validity of the provided data. 
+ *
+ */
 public class StringMessage implements Message<StringMessage> {
 	private boolean isValid = false;
 	private Command command;
 	private ArrayList<String> parameters = new ArrayList<String>();
 	private int parameterLength;
-
+	private static final String NEW_LINE_DELIMITER="\n";
+	private static final String CARRIAGE_RETURN_DELIMITER="\r";
+	private static final String CARRIAGE_RETURN_NEW_LINE_DELIMITER="\r\n";
+	private static final Logger DATA_LOGGER = Logger.getLogger("StringMessage");
 	
+	/**
+	 * Constructor - receives a string, deletes all newLine delimiters.
+	 * Splits the string into an array and sets the command and the parameters
+	 * @param originalMessage
+	 */
 	public StringMessage(String originalMessage) {
-		originalMessage = originalMessage.replaceAll("(\r|\r\n|\n)", "");
+		originalMessage=originalMessage.replaceAll(CARRIAGE_RETURN_DELIMITER, "");
+		originalMessage=originalMessage.replaceAll(CARRIAGE_RETURN_NEW_LINE_DELIMITER, "");
+		originalMessage=originalMessage.replaceAll(NEW_LINE_DELIMITER, "");
 		if(originalMessage==null){
 			return;
 		}
@@ -21,7 +39,7 @@ public class StringMessage implements Message<StringMessage> {
 		String[] splitedMessageArr = originalMessage.split(" ");
 
 		if (splitedMessageArr.length < 1) {
-			System.out.println("Received Illegal Command");
+			DATA_LOGGER.log(Level.INFO,"Received Illegal Command");
 			return;
 		}
 
@@ -40,12 +58,19 @@ public class StringMessage implements Message<StringMessage> {
 	}
 	
 	
+	/**
+	 * @return the validity status of the message
+	 */
 	public boolean isValid() {
 		return isValid;
 	}
 
+	/**
+	 * Receives a string representing a command and checks if that is an acceptable Command type
+	 * if not - Sets validity as false
+	 * @param strCommand - string representing the requested command
+	 */
 	private void setCommand(String strCommand) {
-		//strCommand.replaceAll("(\r\n|\n|\r)", "");
 		if (strCommand.equalsIgnoreCase(Command.NICK.toString())) {
 			command = Command.NICK;
 		} else if (strCommand.equalsIgnoreCase(Command.JOIN.toString())) {
@@ -77,10 +102,17 @@ public class StringMessage implements Message<StringMessage> {
 		}
 	}
 
+	/**
+	 * @return the command 
+	 */
 	public Command getCommand() {
 		return command;
 	}
 
+	/**
+	 * @param index the index of the parameter to be returned
+	 * @return the parameter at the provided index
+	 */
 	public String getParameter(int index) {
 		if (index < parameters.size()) {
 			return parameters.get(index);
@@ -88,10 +120,16 @@ public class StringMessage implements Message<StringMessage> {
 		return null;
 	}
 
+	/**
+	 * @return the length of the parameters ArrayList
+	 */
 	public int getParameterLength() {
 		return parameterLength;
 	}
 
+	/**
+	 * @return all the parameters
+	 */
 	public String getParameters() {
 		String parametersStr = "";
 		for (int i = 0; i < parameters.size(); i++) {
@@ -101,6 +139,9 @@ public class StringMessage implements Message<StringMessage> {
 
 	}
 	
+	/**
+	 * @return the command and parameters
+	 */
 	public String getMessage() {
 		return getCommand()+" "+getParameters();
 	}

@@ -1,23 +1,23 @@
-package bgu.spl.container;
+package bgu.spl.logic;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.gson.Gson;
 
-import bgu.spl.server.json.Database;
-import bgu.spl.server.json.Input;
-import bgu.spl.server.passive.Command;
-import bgu.spl.server.passive.Result;
-import bgu.spl.server.passive.StringMessage;
+import bgu.spl.json.QuestionDatabase;
+import bgu.spl.json.QuestionData;
+import bgu.spl.passive.Command;
+import bgu.spl.passive.Result;
+import bgu.spl.passive.StringMessage;
 
 /**
  * Implements the game interface 
@@ -29,14 +29,14 @@ public class Bluffer implements Game<StringMessage> {
 	private Queue<Player> playersList;
 	private Map<Player, Integer> mapPlayersToScores;
 	private static final int NUMBER_OF_ROUNDS = 3;
-
+	private static final Logger DATA_LOGGER = Logger.getLogger("Bluffer");
+	private static final String jsonPath = "bluffer.json";
 	/**
 	 * Constructor
 	 * Reads json file and 
 	 * @param inputPlayersList
 	 */
 	public Bluffer(Queue<Player> inputPlayersList) {
-		//Initiailze fields
 		roundsList = new ConcurrentLinkedQueue<Round>();
 		playersList = new ConcurrentLinkedQueue<Player>();
 		mapPlayersToScores = new ConcurrentHashMap<Player, Integer>();
@@ -56,22 +56,22 @@ public class Bluffer implements Game<StringMessage> {
 	 */
 	public void readJson(){
 		// Load the json file into the jsonObject
-		String jsonPath = "bluffer.json";
-		Database jsonObject = null;
+		
+		QuestionDatabase jsonObject = null;
 		try {
 			Gson gson = new Gson();
 			BufferedReader br;
 			br = new BufferedReader(new FileReader(jsonPath));
-			jsonObject = gson.fromJson(br, Database.class);
+			jsonObject = gson.fromJson(br, QuestionDatabase.class);
 		} catch (FileNotFoundException e) {
-			System.out.println("ERROR - couldn't read json file");
+			DATA_LOGGER.log(Level.WARNING, "ERROR - couldn't read json file");
 		}
 		
-		// Now read the contents of the jsonObject and insert into the rounds list
+		// Read the contents of the jsonObject and insert into the rounds list
 		if (jsonObject != null) {
-			Input[] inputArray = jsonObject.getQuestions();
+			QuestionData[] inputArray = jsonObject.getQuestions();
 			for (int i = 0; i < inputArray.length && i<NUMBER_OF_ROUNDS; i++) {
-				Input currentInput = inputArray[i];
+				QuestionData currentInput = inputArray[i];
 				roundsList.add(new Round(currentInput.getQuestionText(), currentInput.getRealAnswer(), playersList));
 			}
 		}
@@ -82,6 +82,7 @@ public class Bluffer implements Game<StringMessage> {
 	 * Invokes the askQuestion method and sets all players acceptable commands to be TXTRESP
 	 */
 	public void processStartGame() {
+		//Invoke askQuestion
 		askQuestion();
 
 		// Set the new acceptable commands to:
@@ -103,7 +104,9 @@ public class Bluffer implements Game<StringMessage> {
 
 	@Override
 	/**
-	 * 
+	 * Handles the processing of the TXTRESP from the client
+	 * Adds the bluffedAnswer of the user
+	 * If all bluffedMessages have arrived - send ASKCHOICES 
 	 */
 	public String processTxtResp(StringMessage message, Player currentPlayer) {
 		String bluffedAnswer = message.getParameter(0);
@@ -111,6 +114,7 @@ public class Bluffer implements Game<StringMessage> {
 		Round currentRound = getCurrentRound();
 		currentRound.addBluffedAnswer(currentPlayer, bluffedAnswer);
 
+		//If all answers have arrived
 		String response = "";
 		if (currentRound.isAllBluffedMessagesArrived()) {
 			response = Command.ASKCHOICES + " " + currentRound.getAllAnswers();
@@ -119,7 +123,13 @@ public class Bluffer implements Game<StringMessage> {
 	}
 
 	@Override
+	/**
+	 * Handles the SELECTRESP command from the clients
+	 * updates the selected answer to the player
+	 * Checks if the 
+	 */
 	public void processSelectResp(StringMessage message, Player currentPlayer) {
+		//Update answer to the player
 		String selectedAnswerParam = message.getParameter(0);
 		if (!getCurrentRound().updateSelectedAnswer(selectedAnswerParam, currentPlayer)) {
 			currentPlayer.triggerCallback(new StringMessage(Command.SYSMSG +" "+message.getCommand()+" " + Result.REJECTED));
@@ -130,19 +140,15 @@ public class Bluffer implements Game<StringMessage> {
 		}
 		sendGameMsg(new StringMessage(Command.GAMEMSG + " " +"Correct answer: " + getCurrentRound().getRealAnswer()), currentPlayer);
 
-		// set current player to receive txtresp
-		Command[] newAcceptableCommands = {};
-		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
-
+		
+		//All players selected an answer - finish the round and send score to every player
 		if (getCurrentRound().isAllPlayersSelectedAnswers()) {
-			// Finish round - Go over players, calculate their score in the
-			// round and send
 			for (Player player : playersList) {
 				int currentScore = mapPlayersToScores.get(player);
 				int roundScore = getCurrentRound().getScoreByPlayer(player);
 				mapPlayersToScores.replace(player, currentScore + roundScore);
 
-				// we want to trigger the callbacks of each player
+				//Send score message to all the players
 				int playersScore = getCurrentRound().getScoreByPlayer(player);
 				if (getCurrentRound().isPlayerCorrect(player)) {
 					sendGameMsg(new StringMessage(Command.GAMEMSG + " " +"correct! " + playersScore), player);
@@ -152,10 +158,13 @@ public class Bluffer implements Game<StringMessage> {
 
 			}
 
+			//Remove the current round
 			roundsList.remove();
 
 			// Start new round if possible
 			if (getCurrentRound() != null) {
+				
+				//Invoke askQuestion
 				askQuestion();
 
 				// Set the new acceptable commands for all the players in the game
@@ -172,13 +181,13 @@ public class Bluffer implements Game<StringMessage> {
 					sendGameMsg(new StringMessage(Command.GAMEMSG + " " +getGameSummary()), player);
 
 				}
+				
 				currentPlayer.getCurrentRoom().finishGame();
 
 			}
 		}
 	}
 
-	//Command.GAMEMSG + " " + message
 	
 	@Override
 	/**
@@ -211,14 +220,10 @@ public class Bluffer implements Game<StringMessage> {
 	 */
 	private String getGameSummary() {
 		String summary = "Summary:";
-		//not synched because when the game summary occurs theres no chance for any change in the 
-		//players in the playerList.. or in the mapPlayersToScores
-		/*synchronized(playersList){*/
 			for (Player player : playersList) {
 				int currentPlayersScore = mapPlayersToScores.get(player);
 				summary += " " + player.getPlayerName() + ": " + currentPlayersScore + "pts";
 			}
-		/*}*/
 		return summary;
 	}
 
@@ -239,11 +244,9 @@ public class Bluffer implements Game<StringMessage> {
 	 * @param messageToBeSent
 	 */
 	private void sendMessageToAllPlayers(String messageToBeSent) {
-		synchronized(playersList){
 			for (Player player : playersList) {
 				player.triggerCallback(new StringMessage(messageToBeSent));
 			}
-		}
 	}
 
 

@@ -1,4 +1,4 @@
-package bgu.spl.server.reactor.reactor;
+package bgu.spl.server.reactor;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import bgu.spl.server.passive.StringMessage;
+import bgu.spl.passive.StringMessage;
 import bgu.spl.server.protocol.AsyncServerProtocol;
 import bgu.spl.server.protocol.ServerProtocol;
 import bgu.spl.server.protocol.ServerProtocolFactory;
@@ -28,19 +28,14 @@ import bgu.spl.server.tokenizer.TokenizerFactory;
 public class Reactor<T> implements Runnable {
 
 	private static final Logger logger = Logger.getLogger("edu.spl.reactor");
-
 	private final int _port;
-
 	private final int _poolSize;
-
 	private final ServerProtocolFactory<T> _protocolFactory;
-
 	private final TokenizerFactory<T> _tokenizerFactory;
-
 	private volatile boolean _shouldRun = true;
-
 	private ReactorData<T> _data;
-
+	private static final String NEW_LINE_DELIMITER="\n";
+	
 	/**
 	 * Creates a new Reactor
 	 *
@@ -221,6 +216,12 @@ public class Reactor<T> implements Runnable {
 		}
 	}
 
+	/**
+	 * 
+	 * @param port - the port on which the server will listen
+	 * @param poolSize - the required pool size of the server
+	 * @return
+	 */
 	public static Reactor<StringMessage> startServer(int port, int poolSize){
 		ServerProtocolFactory<StringMessage> protocolMaker = new ServerProtocolFactory<StringMessage>(){
 			public AsyncServerProtocol<StringMessage> create(){
@@ -231,7 +232,7 @@ public class Reactor<T> implements Runnable {
 		final Charset charset = Charset.forName("UTF-8");
 		TokenizerFactory<StringMessage> tokenizerMaker = new TokenizerFactory<StringMessage>() {
 			public MessageTokenizer<StringMessage> create() {
-				return new FixedSeparatorMessageTokenizer("\n", charset);
+				return new FixedSeparatorMessageTokenizer(NEW_LINE_DELIMITER, charset);
 			}
 		};
 
@@ -239,4 +240,4 @@ public class Reactor<T> implements Runnable {
 		return reactor;
 	}
 
-	}
+}

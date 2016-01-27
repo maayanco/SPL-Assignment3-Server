@@ -1,4 +1,4 @@
-package bgu.spl.server.reactor.reactor;
+package bgu.spl.server.reactor;
 
 import java.nio.channels.Selector;
 import java.util.concurrent.ExecutorService;
@@ -17,14 +17,26 @@ public class ReactorData<T> {
 	private final ServerProtocolFactory<T> _protocolMaker;
 	private final TokenizerFactory<T> _tokenizerMaker;
 
+	/**
+	 * @return the executor service
+	 */
 	public ExecutorService getExecutor() {
 		return _executor;
 	}
 
+	/**
+	 * @return the selector object
+	 */
 	public Selector getSelector() {
 		return _selector;
 	}
 
+	/**
+	 * @param _executor - The provided execturo service
+	 * @param _selector - the provided selector object
+	 * @param protocol - the protocol factory object
+	 * @param tokenizer - the tokenizer factory object
+	 */
 	public ReactorData(ExecutorService _executor, Selector _selector, ServerProtocolFactory<T> protocol,
 			TokenizerFactory<T> tokenizer) {
 		this._executor = _executor;
@@ -33,10 +45,16 @@ public class ReactorData<T> {
 		this._tokenizerMaker = tokenizer;
 	}
 
+	/**
+	 * @return the procotol factory
+	 */
 	public ServerProtocolFactory<T> getProtocolMaker() {
 		return _protocolMaker;
 	}
 
+	/**
+	 * @return the tokenizer factory
+	 */
 	public TokenizerFactory<T> getTokenizerMaker() {
 		return _tokenizerMaker;
 	}

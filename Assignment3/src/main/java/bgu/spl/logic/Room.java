@@ -1,9 +1,9 @@
-package bgu.spl.container;
+package bgu.spl.logic;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import bgu.spl.server.passive.StringMessage;
+import bgu.spl.passive.StringMessage;
 
 /**
  * Represents a room and contains a game which might be in progress or not
@@ -26,10 +26,9 @@ public class Room {
 	/**
 	 * Initializes a new game instance using the GameFactory
 	 */
+	@SuppressWarnings("unchecked")
 	public boolean startNewGame(StringMessage message) {
 		GameFactory gameFactory = new GameFactory();
-		/* synchronized(game){ */
-		/* synchronized(playersList){ */
 		game = gameFactory.create(playersList,message.getParameter(0));
 		if(game==null){
 			return false;
@@ -38,13 +37,11 @@ public class Room {
 			game.processStartGame();
 			return true;
 		}
-		/* } */
-		/* } */
 	}
 
 	/**
 	 * Sends the provided message to all players currently in the room
-	 * @param message
+	 * @param message - the message to be sent to all players
 	 */
 	public void sendToAllPlayers(String message) {
 		synchronized (playersList) {
@@ -57,8 +54,9 @@ public class Room {
 	/**
 	 * @return a clone of the  playersList
 	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public Queue<Player> getPlayersList() {
-		return new ConcurrentLinkedQueue(playersList);
+		return new ConcurrentLinkedQueue<Player>(playersList);
 	}
 
 	/**
@@ -70,21 +68,18 @@ public class Room {
 	 * @return true if successful, false otherwise
 	 */
 	public boolean removePlayerFromRoom(Player currentPlayer) {
-
+		
 		if (game != null) {
 			// A game is currently in progress - can't remove player
 			return false;
 		} else {
 			// A game is not in progress-
-				synchronized (playersList) {
 					if (playersList.contains(currentPlayer)) {
 						playersList.remove(currentPlayer);
-						currentPlayer.setCurrentRoom(null); //should the player be synched?
+						currentPlayer.setCurrentRoom(null); 
 					}
 					return true;
-				}
 		}
-
 	}
 
 	/**
@@ -96,20 +91,14 @@ public class Room {
 	 * @return true if successful, false otherwise
 	 */
 	public boolean addPlayerToRoom(Player currentPlayer) {
-		/* synchronized(game){ */
 		if (game != null) {
-			// A game is currently in progrees - can't add player
 			return false;
 		} else {
-			// A game is not currently in progress
-			/* synchronized(playersList){ */
 			if (!playersList.contains(currentPlayer)) {
 				playersList.add(currentPlayer);
 			}
-			/* } */
 			return true;
 		}
-		/* } */
 	}
 
 	/**

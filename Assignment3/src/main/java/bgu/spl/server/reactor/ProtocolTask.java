@@ -1,4 +1,4 @@
-package bgu.spl.server.reactor.reactor;
+package bgu.spl.server.reactor;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -46,6 +46,10 @@ public class ProtocolTask<T> implements Runnable {
 		}
 	}
 
+	/**
+	 * Add bytes to the Tokenizer
+	 * @param b the ByteBuffer to be added
+	 */
 	public void addBytes(ByteBuffer b) {
 		_tokenizer.addBytes(b);
 	}

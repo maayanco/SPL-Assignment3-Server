@@ -1,8 +1,10 @@
-package bgu.spl.container;
+package bgu.spl.logic;
 
-/*import bgu.spl.server.passive.StringMessage;*/
-
+/**
+ * Interface that represents a Game type 
+ */
 public interface Game<T> {
+	
 	String processTxtResp(T message, Player currentPlayer);
 
 	void processSelectResp(T message, Player currentPlayer);

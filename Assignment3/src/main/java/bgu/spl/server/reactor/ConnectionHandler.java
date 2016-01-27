@@ -1,4 +1,4 @@
-package bgu.spl.server.reactor.reactor;
+package bgu.spl.server.reactor;
 
 import java.io.IOException;
 import java.net.SocketAddress;

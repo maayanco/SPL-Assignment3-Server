@@ -1,9 +1,9 @@
-package bgu.spl.container;
+package bgu.spl.logic;
 
 import java.util.Map;
 import java.util.Queue;
 
-import bgu.spl.server.passive.StringMessage;
+import bgu.spl.passive.StringMessage;
 
 public class Guesser implements Game<StringMessage>{
 	

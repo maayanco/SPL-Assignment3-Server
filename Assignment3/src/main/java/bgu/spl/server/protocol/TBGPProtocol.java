@@ -1,13 +1,14 @@
 package bgu.spl.server.protocol;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import bgu.spl.container.ContainerSingleton;
-import bgu.spl.container.GameFactory;
-import bgu.spl.container.Player;
-import bgu.spl.server.passive.Command;
-import bgu.spl.server.passive.StringMessage;
-import bgu.spl.server.passive.Result;
+import bgu.spl.logic.ContainerSingleton;
+import bgu.spl.logic.Player;
+import bgu.spl.passive.Command;
+import bgu.spl.passive.Result;
+import bgu.spl.passive.StringMessage;
 import bgu.spl.server.threadperclient.ProtocolCallback;
 
 /** 
@@ -19,6 +20,7 @@ public class TBGPProtocol implements AsyncServerProtocol<StringMessage> {
 	private static ContainerSingleton container = ContainerSingleton.getInstance();
 	private final static String TERMINATION_MESSAGE = "QUIT";
 	private boolean shouldClose = false;
+	private static final Logger DATA_LOGGER = Logger.getLogger("TBGPProtocol");
 
 	/**
 	 * Constructor
@@ -40,7 +42,6 @@ public class TBGPProtocol implements AsyncServerProtocol<StringMessage> {
 			player.setCallback(callback);
 			if(isEnd(msg)){
 				if(container.handleQuit(player)){
-					//connectionTerminated(); //should be returned!
 					triggerCallback(Command.SYSMSG +" "+ msg.getCommand()+" "+ Result.ACCEPTED, callback);
 					connectionTerminated();
 				}
@@ -80,7 +81,6 @@ public class TBGPProtocol implements AsyncServerProtocol<StringMessage> {
 	 */
 	@Override
 	public boolean isEnd(StringMessage message) {
-		//return message.equals(TERMINATION_MESSAGE);
 		return TERMINATION_MESSAGE.equalsIgnoreCase(message.getCommand().toString());
 	}
 
@@ -94,7 +94,7 @@ public class TBGPProtocol implements AsyncServerProtocol<StringMessage> {
 			StringMessage message = new StringMessage(msg);
 			callback.sendMessage(message);
 		} catch (IOException e) {
-			System.out.println("An error has occured while invoking ProtocolCallback");
+			DATA_LOGGER.log(Level.INFO, "An error has occured while invoking ProtocolCallback");
 		}
 	}
 	

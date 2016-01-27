@@ -8,7 +8,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.util.Vector;
 
-import bgu.spl.server.passive.StringMessage;
+import bgu.spl.passive.StringMessage;
 
 public class FixedSeparatorMessageTokenizer implements MessageTokenizer<StringMessage> {
 
@@ -93,19 +93,4 @@ public class FixedSeparatorMessageTokenizer implements MessageTokenizer<StringMe
 		ByteBuffer bb = this._encoder.encode(CharBuffer.wrap(sb));
 		return bb;
 	}
-
-	/**
-	 * Convert the String message into bytes representation, taking care of
-	 * encoding and framing.
-	 *
-	 * @return a ByteBuffer with the message content converted to bytes, after
-	 *         framing information has been added.
-	 *//*
-	public ByteBuffer getBytesArrayForMessage(StringMessage msg) throws CharacterCodingException {
-		StringBuilder sb = new StringBuilder(msg.getMessage());
-		sb.append(this._messageSeparator);
-		byte[] bb = this._encoder.en
-		ByteBuffer bb = this._encoder.encode(CharBuffer.wrap(sb));
-		return bb;
-	}*/
 }

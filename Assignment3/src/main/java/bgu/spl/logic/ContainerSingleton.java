@@ -1,23 +1,19 @@
-package bgu.spl.container;
+package bgu.spl.logic;
 
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Logger;
 
-import bgu.spl.server.passive.Command;
-import bgu.spl.server.passive.StringMessage;
-import bgu.spl.server.passive.Result;
-import bgu.spl.server.passive.StringMessage;
+import bgu.spl.passive.Command;
+import bgu.spl.passive.Result;
+import bgu.spl.passive.StringMessage;
 
 /**
  * This class is a thread safe singleton that manages all the logic of the game.
- * 
- *
+ * It contains a list of rooms and of players names
  */
 public class ContainerSingleton {
 	
-	/*private GameFactory gameFactory = new GameFactory();*/
 	private Queue<Room> roomsList = new ConcurrentLinkedQueue<Room>();
 	private Queue<String> playersNames = new ConcurrentLinkedQueue<String>();
 
@@ -26,7 +22,7 @@ public class ContainerSingleton {
 	 * object (ConatinerSingleton constructor is invoked once, and from then on
 	 * the same instance is returned).
 	 */
-	public static class ContainerHolder { // should this be static? not sure!!!
+	public static class ContainerHolder { 
 		private static ContainerSingleton instance = new ContainerSingleton();
 	}
 
@@ -47,29 +43,28 @@ public class ContainerSingleton {
 	/**
 	 * Receives a message and checks if the command is acceptable by the user,
 	 * if so invokes the appropriate handle method
-	 * 
 	 * @param message
 	 *            - the message received from the client
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
 	public void processMessage(StringMessage message, Player currentPlayer) {
-		if (message.getCommand().equals(Command.NICK) && currentPlayer.isCommandAccepted(Command.NICK) && message.getParameterLength()>0) {
+		if (message.getCommand().toString().equalsIgnoreCase(Command.NICK.toString()) && currentPlayer.isCommandAccepted(Command.NICK) && message.getParameterLength()>0) {
 			handleNick(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.JOIN) && currentPlayer.isCommandAccepted(Command.JOIN) && message.getParameterLength()>0) {
+		} else if (message.getCommand().toString().equalsIgnoreCase(Command.JOIN.toString()) && currentPlayer.isCommandAccepted(Command.JOIN) && message.getParameterLength()>0) {
 			handleJoin(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.MSG) && currentPlayer.isCommandAccepted(Command.MSG)
+		} else if (message.getCommand().toString().equalsIgnoreCase(Command.MSG.toString()) && currentPlayer.isCommandAccepted(Command.MSG)
 				&& message.getParameterLength() > 0) {
 			handleMsg(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.LISTGAMES)
+		} else if (message.getCommand().toString().equalsIgnoreCase(Command.LISTGAMES.toString())
 				&& currentPlayer.isCommandAccepted(Command.LISTGAMES)) {
 			handleListGames(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.STARTGAME)
+		} else if (message.getCommand().toString().equalsIgnoreCase(Command.STARTGAME.toString())
 				&& currentPlayer.isCommandAccepted(Command.STARTGAME) && message.getParameterLength()>0) {
 			handleStartGame(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.TXTRESP) && currentPlayer.isCommandAccepted(Command.TXTRESP) && message.getParameterLength()>0) {
+		} else if (message.getCommand().toString().equalsIgnoreCase(Command.TXTRESP.toString()) && currentPlayer.isCommandAccepted(Command.TXTRESP) && message.getParameterLength()>0) {
 			handleTxtresp(message, currentPlayer);
-		} else if (message.getCommand().equals(Command.SELECTRESP)
+		} else if (message.getCommand().toString().equalsIgnoreCase(Command.SELECTRESP.toString())
 				&& currentPlayer.isCommandAccepted(Command.SELECTRESP) && message.getParameterLength()>0) {
 			handleSelectresp(message, currentPlayer);
 		} else {
@@ -117,9 +112,10 @@ public class ContainerSingleton {
 	 */
 	public void handleJoin(StringMessage message, Player currentPlayer) {
 		Room currentRoom = currentPlayer.getCurrentRoom();
+		
+		//Remove the player from it's current room if possible
 		if (currentRoom != null) {
 			synchronized (currentRoom) {
-				// If player is currently in a room - remove
 				if (!currentPlayer.getCurrentRoom().removePlayerFromRoom(currentPlayer)) {
 					sendSYSMSG(currentPlayer, Result.REJECTED, message, null);
 					return;
@@ -127,14 +123,18 @@ public class ContainerSingleton {
 			}
 		}
 
-		// The player is not in any room - we can add him to the requested room
-		String requestedRoomName = message.getParameter(0);
-		Room requestedRoom = getRoomByName(requestedRoomName);
-		if (requestedRoom == null) {
-			requestedRoom = new Room(requestedRoomName);
-			roomsList.add(requestedRoom);
+		Room requestedRoom;
+		// The player is not in any room - add it to the requested room
+		synchronized(roomsList){
+			String requestedRoomName = message.getParameter(0);
+			requestedRoom = getRoomByName(requestedRoomName);
+			if (requestedRoom == null) {
+				requestedRoom = new Room(requestedRoomName);
+				roomsList.add(requestedRoom);
+			}
 		}
-
+		
+		//add player to the requestedRoom
 		synchronized (requestedRoom) {
 			boolean isAdditionSucsessfull = requestedRoom.addPlayerToRoom(currentPlayer);
 			if (isAdditionSucsessfull) {
@@ -161,8 +161,8 @@ public class ContainerSingleton {
 	 */
 	public void handleMsg(StringMessage message, Player currentPlayer) {
 		Room currentRoom = currentPlayer.getCurrentRoom();
-		synchronized (currentRoom) {
 			Queue<Player> roomsPlayersList = currentRoom.getPlayersList();
+			synchronized (roomsPlayersList) {
 			for (Player player : roomsPlayersList) {
 				if (!player.equals(currentPlayer)) {
 					player.triggerCallback(new StringMessage(Command.USRMSG + " " + message.getParameters()));
@@ -172,8 +172,6 @@ public class ContainerSingleton {
 
 		// Set new acceptable commands for the currentPlayer: STARTGAME,
 		// MSG,LISTGAMES, QUIT
-		Command[] newAcceptableCommands = { Command.STARTGAME, Command.MSG, Command.LISTGAMES, Command.QUIT };
-		setPlayerAcceptableCommands(currentPlayer, newAcceptableCommands);
 		sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 	}
 
@@ -225,6 +223,7 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
+	@SuppressWarnings("unchecked")
 	public void handleTxtresp(StringMessage message, Player currentPlayer) {
 		// Don't think this needs synchronize - but check again
 		Room currentRoom = currentPlayer.getCurrentRoom();
@@ -248,15 +247,18 @@ public class ContainerSingleton {
 	 * @param currentPlayer
 	 *            - the player associated with the client
 	 */
+	@SuppressWarnings("unchecked")
 	public void handleSelectresp(StringMessage message, Player currentPlayer) {
-		// sendSYSMSG(currentPlayer, Result.ACCEPTED, message, null);
 		currentPlayer.getCurrentRoom().getGame().processSelectResp(message, currentPlayer);
-
 	}
 
+	/**
+	 * 
+	 * @param currentPlayer - the player associated with the client
+	 * @return true if quit was successful, false otherwise
+	 */
 	public boolean handleQuit(Player currentPlayer) {
 		if (currentPlayer.isCommandAccepted(Command.QUIT)) {
-			// we need to remove the player from everything!!!!
 			removePlayer(currentPlayer);
 			return true;
 		} else {
@@ -329,14 +331,15 @@ public class ContainerSingleton {
 	 * Is invoked when a quit command is received - removes the provided player
 	 * from the players room and from the players names list
 	 * 
-	 * @param player
+	 * @param currentPlayer  - the player to be changed
 	 */
-	public void removePlayer(Player player) {
-		// should this be synchronized? don't think so..
-		playersNames.remove(player.getPlayerName());
-		Room currentPlayersRoom = player.getCurrentRoom();
+	public void removePlayer(Player currentPlayer) {
+		playersNames.remove(currentPlayer.getPlayerName());
+		Room currentPlayersRoom = currentPlayer.getCurrentRoom();
 		if (currentPlayersRoom != null) {
-			currentPlayersRoom.removePlayerFromRoom(player);
+			synchronized(currentPlayersRoom){
+				currentPlayersRoom.removePlayerFromRoom(currentPlayer);
+			}
 		}
 	}
 }
